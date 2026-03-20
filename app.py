@@ -1,40 +1,29 @@
 from flask import Flask, render_template, request, jsonify, send_file
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
 import io
 import base64
+import numpy as np
 import os
 import tempfile
 import sys
 from datetime import datetime
 import warnings
 
-# Tắt warnings không cần thiết
 warnings.filterwarnings('ignore')
 
 print(f"🐍 Python version: {sys.version}")
-print(f"📍 Current directory: {os.getcwd()}")
 
-# Import với xử lý lỗi
 try:
-    from PIL import Image, ImageDraw, ImageFont
-    print(f"✅ Pillow version: {Image.__version__ if hasattr(Image, '__version__') else 'unknown'}")
+    from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
+    print(f"✅ Pillow imported successfully")
 except ImportError as e:
     print(f"❌ Error importing Pillow: {e}")
-    # Fallback
-    class Image:
-        pass
-    class ImageDraw:
-        pass
-    class ImageFont:
-        @staticmethod
-        def load_default():
-            return None
 
 try:
     import numpy as np
     print(f"✅ NumPy version: {np.__version__}")
 except ImportError as e:
     print(f"❌ Error importing NumPy: {e}")
-    # Fallback
     class np:
         @staticmethod
         def array(data, dtype=None):
@@ -42,25 +31,116 @@ except ImportError as e:
         @staticmethod
         def clip(data, min_val, max_val):
             return min(max(data, min_val), max_val)
-        __version__ = "0.0.0"
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Bảng ký tự ASCII
-CHAR_SETS = {
-    'classic': " .:-=+*#%@",
+# Bảng ký tự ASCII với các gradient khác nhau
+ASCII_GRADIENTS = {
+    'normal': " .:-=+*#%@",
+    'detailed': " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
     'blocks': "  ░▒▓█",
     'simple': " .-+=*#%@@",
     'retro': "@%#*+=-:. ",
-    'detailed': " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
-    'custom': " .:-=+*#%@"
+    'inverted': "@%#*+=-:. ",
+    'contrast': " .:-=+*#%@@@@@@",
+    'light': " .:-=+*",
+    'dark': "*#%@@@",
 }
 
-def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
+def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0, 
+                  sharpness=1.0, grayscale=0, sepia=0, invert=0,
+                  threshold=128, edge_detection=0):
     """
-    Chuyển đổi ảnh thành ASCII art - Tương thích Python 3.14
+    Áp dụng các hiệu ứng chỉnh sửa ảnh
+    """
+    try:
+        # Chuyển sang RGB nếu cần
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Điều chỉnh độ sáng
+        if brightness != 1.0:
+            enhancer = ImageEnhance.Brightness(img)
+            img = enhancer.enhance(brightness)
+        
+        # Điều chỉnh độ tương phản
+        if contrast != 1.0:
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(contrast)
+        
+        # Điều chỉnh độ bão hòa
+        if saturation != 1.0:
+            enhancer = ImageEnhance.Color(img)
+            img = enhancer.enhance(saturation)
+        
+        # Điều chỉnh độ nét
+        if sharpness != 1.0:
+            enhancer = ImageEnhance.Sharpness(img)
+            img = enhancer.enhance(sharpness)
+        
+        # Chuyển sang grayscale
+        if grayscale > 0:
+            gray_img = img.convert('L')
+            if grayscale < 1.0:
+                # Pha trộn giữa ảnh màu và grayscale
+                color_img = img
+                img = Image.blend(color_img, gray_img.convert('RGB'), grayscale)
+            else:
+                img = gray_img.convert('RGB')
+        
+        # Hiệu ứng Sepia
+        if sepia > 0:
+            sepia_img = Image.new('RGB', img.size)
+            pixels = img.load()
+            sepia_pixels = sepia_img.load()
+            for i in range(img.size[0]):
+                for j in range(img.size[1]):
+                    r, g, b = pixels[i, j]
+                    tr = int(0.393 * r + 0.769 * g + 0.189 * b)
+                    tg = int(0.349 * r + 0.686 * g + 0.168 * b)
+                    tb = int(0.272 * r + 0.534 * g + 0.131 * b)
+                    sepia_pixels[i, j] = (min(255, tr), min(255, tg), min(255, tb))
+            if sepia < 1.0:
+                img = Image.blend(img, sepia_img, sepia)
+            else:
+                img = sepia_img
+        
+        # Đảo màu
+        if invert > 0:
+            invert_img = Image.eval(img.convert('RGB'), lambda x: 255 - x)
+            if invert < 1.0:
+                img = Image.blend(img, invert_img, invert)
+            else:
+                img = invert_img
+        
+        # Thresholding (ngưỡng)
+        if threshold < 255:
+            gray = img.convert('L')
+            threshold_img = gray.point(lambda p: 255 if p > threshold else 0)
+            if threshold > 0:
+                img = threshold_img.convert('RGB')
+        
+        # Edge Detection (phát hiện cạnh)
+        if edge_detection > 0:
+            edge_img = img.convert('L').filter(ImageFilter.FIND_EDGES)
+            if edge_detection < 1.0:
+                edge_img = edge_img.point(lambda p: p * edge_detection)
+            img = edge_img.convert('RGB')
+        
+        return img
+    
+    except Exception as e:
+        print(f"Error in enhance_image: {e}")
+        return img
+
+def image_to_ascii_advanced(image_data, width, brightness=1.0, contrast=1.0,
+                            saturation=1.0, hue=0, grayscale=0, sepia=0,
+                            invert=0, threshold=128, sharpness=1.0,
+                            edge_detection=0, gradient='normal', space_density=1):
+    """
+    Chuyển đổi ảnh thành ASCII art với nhiều tùy chọn nâng cao
     """
     try:
         # Mở ảnh
@@ -68,6 +148,11 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
             img = Image.open(io.BytesIO(image_data))
         else:
             img = image_data
+        
+        # Áp dụng các hiệu ứng
+        img = enhance_image(img, brightness, contrast, saturation, 
+                           sharpness, grayscale, sepia, invert,
+                           threshold, edge_detection)
         
         # Chuyển sang grayscale
         img = img.convert('L')
@@ -81,20 +166,25 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
         
         # Resize ảnh
         try:
-            # Thử dùng LANCZOS trước
             img = img.resize((width, height), Image.Resampling.LANCZOS)
         except AttributeError:
-            # Fallback cho phiên bản cũ
             img = img.resize((width, height), Image.LANCZOS)
         
         # Lấy dữ liệu pixel
         pixels = np.array(img, dtype=np.float32)
         
-        # Điều chỉnh độ sáng
-        pixels = np.clip(pixels * brightness, 0, 255)
+        # Chọn bảng ký tự
+        charset = ASCII_GRADIENTS.get(gradient, ASCII_GRADIENTS['normal'])
+        if gradient == 'inverted':
+            charset = charset[::-1]
+        
+        # Điều chỉnh space density
+        if space_density != 1:
+            # Làm mờ ảnh để tăng độ dày ký tự
+            pixels = np.clip(pixels * space_density, 0, 255)
         
         # Tạo chuỗi ký tự
-        chars = list(charset_str)
+        chars = list(charset)
         max_index = len(chars) - 1
         
         # Chuyển đổi từng pixel
@@ -112,58 +202,6 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
     
     except Exception as e:
         raise Exception(f"Lỗi xử lý ảnh: {str(e)}")
-
-def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef0ff', padding=20):
-    """
-    Chuyển đổi ASCII art thành ảnh - Tương thích Python 3.14
-    """
-    try:
-        lines = ascii_art.split('\n')
-        if not lines:
-            lines = ['']
-        
-        # Tìm font monospace
-        font = None
-        font_paths = [
-            '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
-            '/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf',
-            None
-        ]
-        
-        for font_path in font_paths:
-            try:
-                if font_path and os.path.exists(font_path):
-                    font = ImageFont.truetype(font_path, font_size)
-                    break
-            except:
-                continue
-        
-        if font is None:
-            font = ImageFont.load_default()
-        
-        # Tính kích thước ảnh
-        char_width = font_size * 0.6
-        char_height = font_size * 1.2
-        
-        max_line_length = max(len(line) for line in lines)
-        img_width = int(max_line_length * char_width) + (padding * 2)
-        img_height = int(len(lines) * char_height) + (padding * 2)
-        
-        # Tạo ảnh
-        img = Image.new('RGB', (img_width, img_height), color=bg_color)
-        draw = ImageDraw.Draw(img)
-        
-        # Vẽ từng dòng
-        y_offset = padding
-        for line in lines:
-            draw.text((padding, y_offset), line, font=font, fill=text_color)
-            y_offset += char_height
-        
-        return img
-    
-    except Exception as e:
-        raise Exception(f"Lỗi tạo ảnh: {str(e)}")
 
 @app.route('/')
 def index():
@@ -183,42 +221,17 @@ def ads_txt():
                 as_attachment=False
             )
         else:
-            # Tạo nội dung mẫu
             sample_content = """# ads.txt file for ASCII Art Studio
 # Replace this with your actual ads.txt content
 google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
 """
             return sample_content, 200, {'Content-Type': 'text/plain'}
     except Exception as e:
-        app.logger.error(f"Error serving ads.txt: {str(e)}")
         return "Error loading ads.txt", 500
-
-@app.route('/robots.txt')
-def robots_txt():
-    """Phục vụ file robots.txt"""
-    try:
-        robots_file_path = os.path.join(os.path.dirname(__file__), 'robots.txt')
-        
-        if os.path.exists(robots_file_path):
-            return send_file(
-                robots_file_path,
-                mimetype='text/plain',
-                as_attachment=False
-            )
-        else:
-            default_robots = """User-agent: *
-Allow: /
-Disallow: /admin
-Sitemap: https://yourdomain.com/sitemap.xml
-"""
-            return default_robots, 200, {'Content-Type': 'text/plain'}
-    except Exception as e:
-        app.logger.error(f"Error serving robots.txt: {str(e)}")
-        return "Error", 500
 
 @app.route('/convert', methods=['POST'])
 def convert():
-    """API chuyển đổi ảnh sang ASCII"""
+    """API chuyển đổi ảnh sang ASCII với tất cả tùy chọn"""
     try:
         if 'image' not in request.files:
             return jsonify({'error': 'Không tìm thấy file ảnh'}), 400
@@ -227,27 +240,37 @@ def convert():
         if file.filename == '':
             return jsonify({'error': 'Chưa chọn file'}), 400
         
+        # Đọc tất cả tham số
         width = int(request.form.get('width', 100))
-        brightness = float(request.form.get('brightness', 1.0))
-        charset_name = request.form.get('charset', 'classic')
-        custom_chars = request.form.get('custom_chars', '')
+        brightness = float(request.form.get('brightness', 100)) / 100
+        contrast = float(request.form.get('contrast', 100)) / 100
+        saturation = float(request.form.get('saturation', 100)) / 100
+        hue = float(request.form.get('hue', 0))
+        grayscale = float(request.form.get('grayscale', 0)) / 100
+        sepia = float(request.form.get('sepia', 0)) / 100
+        invert = float(request.form.get('invert', 0)) / 100
+        threshold = int(request.form.get('threshold', 128))
+        sharpness = float(request.form.get('sharpness', 9)) / 10
+        edge_detection = float(request.form.get('edge_detection', 1)) / 10
+        gradient = request.form.get('gradient', 'normal')
+        space_density = int(request.form.get('space_density', 1))
         
-        if charset_name == 'custom' and custom_chars:
-            charset = custom_chars
-        else:
-            charset = CHAR_SETS.get(charset_name, CHAR_SETS['classic'])
-        
+        # Đọc ảnh
         img_bytes = file.read()
         img = Image.open(io.BytesIO(img_bytes))
         
-        ascii_art = image_to_ascii(img, width, brightness, charset)
+        # Chuyển đổi
+        ascii_art = image_to_ascii_advanced(
+            img, width, brightness, contrast, saturation, hue,
+            grayscale, sepia, invert, threshold, sharpness,
+            edge_detection, gradient, space_density
+        )
         
         return jsonify({
             'success': True,
             'ascii': ascii_art,
             'width': width,
-            'height': len(ascii_art.split('\n')),
-            'charset': charset_name
+            'height': len(ascii_art.split('\n'))
         })
     
     except Exception as e:
@@ -367,7 +390,7 @@ def download_html():
 
 @app.route('/download/image', methods=['POST'])
 def download_image():
-    """Tải xuống ảnh (PNG, JPG, BMP, GIF)"""
+    """Tải xuống ảnh"""
     try:
         data = request.get_json()
         ascii_art = data.get('ascii', '')
@@ -377,52 +400,53 @@ def download_image():
         text_color = data.get('text_color', '#9ef0ff')
         padding = int(data.get('padding', 20))
         
-        img = ascii_to_image(ascii_art, font_size, bg_color, text_color, padding)
+        lines = ascii_art.split('\n')
+        font = ImageFont.load_default()
+        
+        char_width = font_size * 0.6
+        char_height = font_size * 1.2
+        
+        max_line_length = max(len(line) for line in lines)
+        img_width = int(max_line_length * char_width) + (padding * 2)
+        img_height = int(len(lines) * char_height) + (padding * 2)
+        
+        img = Image.new('RGB', (img_width, img_height), color=bg_color)
+        draw = ImageDraw.Draw(img)
+        
+        y_offset = padding
+        for line in lines:
+            draw.text((padding, y_offset), line, font=font, fill=text_color)
+            y_offset += char_height
         
         img_buffer = io.BytesIO()
         
         format_map = {
             'png': ('PNG', 'image/png'),
             'jpg': ('JPEG', 'image/jpeg'),
-            'jpeg': ('JPEG', 'image/jpeg'),
             'bmp': ('BMP', 'image/bmp'),
             'gif': ('GIF', 'image/gif')
         }
         
-        if format_type not in format_map:
-            format_type = 'png'
-        
-        pil_format, mime_type = format_map[format_type]
+        pil_format, mime_type = format_map.get(format_type, ('PNG', 'image/png'))
         
         if format_type in ['jpg', 'jpeg']:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            img.save(img_buffer, format=pil_format, quality=95, optimize=True)
+            img.save(img_buffer, format=pil_format, quality=95)
         else:
             img.save(img_buffer, format=pil_format)
         
         img_buffer.seek(0)
-        
         filename = f"ascii_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{format_type}"
         
-        return send_file(
-            img_buffer,
-            as_attachment=True,
-            download_name=filename,
-            mimetype=mime_type
-        )
+        return send_file(img_buffer, as_attachment=True, download_name=filename, mimetype=mime_type)
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health')
 def health():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'python_version': sys.version,
-        'timestamp': datetime.now().isoformat()
-    }), 200
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
