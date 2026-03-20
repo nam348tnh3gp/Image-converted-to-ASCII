@@ -1,11 +1,31 @@
 from flask import Flask, render_template, request, jsonify, send_file
-from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
-import numpy as np
 import os
 import tempfile
 from datetime import datetime
+
+# Import với xử lý lỗi
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError as e:
+    print(f"Error importing PIL: {e}")
+    # Fallback: tạo class giả nếu cần
+    class Image:
+        pass
+
+try:
+    import numpy as np
+except ImportError as e:
+    print(f"Error importing numpy: {e}")
+    # Fallback: tạo class giả
+    class np:
+        @staticmethod
+        def array(data, dtype=None):
+            return data
+        @staticmethod
+        def clip(data, min_val, max_val):
+            return data
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
@@ -24,15 +44,6 @@ CHAR_SETS = {
 def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
     """
     Chuyển đổi ảnh thành ASCII art
-    
-    Args:
-        image_data: PIL Image object hoặc bytes
-        width: số cột ASCII mong muốn
-        brightness: hệ số điều chỉnh độ sáng (0.4 - 2.2)
-        charset_str: chuỗi ký tự từ tối đến sáng
-    
-    Returns:
-        string: ASCII art
     """
     try:
         # Mở ảnh nếu là bytes
@@ -47,7 +58,7 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
         # Tính toán chiều cao dựa trên aspect ratio
         original_width, original_height = img.size
         aspect_ratio = original_height / original_width
-        height = int(width * aspect_ratio * 0.45)  # Hệ số 0.45 cho font monospace
+        height = int(width * aspect_ratio * 0.45)
         if height < 1:
             height = 1
         
@@ -67,7 +78,12 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
         # Chuyển đổi từng pixel thành ký tự
         ascii_lines = []
         for y in range(height):
-            line = ''.join(chars[min(max_index, int(pixels[y, x] / 255 * max_index))] for x in range(width))
+            line = ''
+            for x in range(width):
+                gray_value = int(pixels[y, x])
+                char_index = int((gray_value / 255) * max_index)
+                char_index = min(max_index, max(0, char_index))
+                line += chars[char_index]
             ascii_lines.append(line)
         
         return '\n'.join(ascii_lines)
@@ -78,26 +94,17 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
 def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef0ff', padding=20):
     """
     Chuyển đổi ASCII art thành ảnh
-    
-    Args:
-        ascii_art: chuỗi ASCII art
-        font_size: kích thước font
-        bg_color: màu nền (hex)
-        text_color: màu chữ (hex)
-        padding: khoảng cách viền (pixel)
-    
-    Returns:
-        PIL Image object
     """
     try:
         lines = ascii_art.split('\n')
         
-        # Tìm font monospace (ưu tiên các font phổ biến)
+        # Tìm font monospace
         font_paths = [
             '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
             '/System/Library/Fonts/Monaco.dfont',
             'C:\\Windows\\Fonts\\consola.ttf',
-            None  # fallback to default
+            None
         ]
         
         font = None
@@ -112,10 +119,11 @@ def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef
                 continue
         
         # Tính kích thước ảnh
-        char_width = font_size * 0.6  # Ước lượng chiều rộng ký tự monospace
+        char_width = font_size * 0.6
         char_height = font_size * 1.2
         
-        img_width = int(len(max(lines, key=len)) * char_width) + (padding * 2)
+        max_line_length = max(len(line) for line in lines)
+        img_width = int(max_line_length * char_width) + (padding * 2)
         img_height = int(len(lines) * char_height) + (padding * 2)
         
         # Tạo ảnh mới
@@ -139,15 +147,56 @@ def index():
     """Trang chủ"""
     return render_template('index.html')
 
+@app.route('/ads.txt')
+def ads_txt():
+    """Phục vụ file ads.txt"""
+    try:
+        ads_file_path = os.path.join(os.path.dirname(__file__), 'ads.txt')
+        
+        if os.path.exists(ads_file_path):
+            return send_file(
+                ads_file_path,
+                mimetype='text/plain',
+                as_attachment=False
+            )
+        else:
+            # Trả về nội dung mẫu nếu không có file
+            sample_content = """# ads.txt file for ASCII Art Studio
+# Replace this with your actual ads.txt content
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+"""
+            return sample_content, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        app.logger.error(f"Error serving ads.txt: {str(e)}")
+        return "Error loading ads.txt", 500
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Phục vụ file robots.txt"""
+    try:
+        robots_file_path = os.path.join(os.path.dirname(__file__), 'robots.txt')
+        
+        if os.path.exists(robots_file_path):
+            return send_file(
+                robots_file_path,
+                mimetype='text/plain',
+                as_attachment=False
+            )
+        else:
+            default_robots = """User-agent: *
+Allow: /
+Disallow: /admin
+Sitemap: https://yourdomain.com/sitemap.xml
+"""
+            return default_robots, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        app.logger.error(f"Error serving robots.txt: {str(e)}")
+        return "Error", 500
+
 @app.route('/convert', methods=['POST'])
 def convert():
-    """
-    API chuyển đổi ảnh sang ASCII
-    Nhận: form data với file ảnh và các tham số
-    Trả về: JSON với ASCII art
-    """
+    """API chuyển đổi ảnh sang ASCII"""
     try:
-        # Kiểm tra file ảnh
         if 'image' not in request.files:
             return jsonify({'error': 'Không tìm thấy file ảnh'}), 400
         
@@ -155,23 +204,19 @@ def convert():
         if file.filename == '':
             return jsonify({'error': 'Chưa chọn file'}), 400
         
-        # Đọc tham số
         width = int(request.form.get('width', 100))
         brightness = float(request.form.get('brightness', 1.0))
         charset_name = request.form.get('charset', 'classic')
         custom_chars = request.form.get('custom_chars', '')
         
-        # Lấy bảng ký tự
         if charset_name == 'custom' and custom_chars:
             charset = custom_chars
         else:
             charset = CHAR_SETS.get(charset_name, CHAR_SETS['classic'])
         
-        # Đọc và xử lý ảnh
         img_bytes = file.read()
         img = Image.open(io.BytesIO(img_bytes))
         
-        # Chuyển đổi sang ASCII
         ascii_art = image_to_ascii(img, width, brightness, charset)
         
         return jsonify({
@@ -185,46 +230,6 @@ def convert():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/convert/base64', methods=['POST'])
-def convert_base64():
-    """
-    API chuyển đổi ảnh base64 sang ASCII
-    """
-    try:
-        data = request.get_json()
-        
-        if not data or 'image' not in data:
-            return jsonify({'error': 'Thiếu dữ liệu ảnh'}), 400
-        
-        # Giải mã base64
-        img_data = base64.b64decode(data['image'].split(',')[1] if ',' in data['image'] else data['image'])
-        
-        # Đọc tham số
-        width = int(data.get('width', 100))
-        brightness = float(data.get('brightness', 1.0))
-        charset_name = data.get('charset', 'classic')
-        custom_chars = data.get('custom_chars', '')
-        
-        # Lấy bảng ký tự
-        if charset_name == 'custom' and custom_chars:
-            charset = custom_chars
-        else:
-            charset = CHAR_SETS.get(charset_name, CHAR_SETS['classic'])
-        
-        # Chuyển đổi
-        img = Image.open(io.BytesIO(img_data))
-        ascii_art = image_to_ascii(img, width, brightness, charset)
-        
-        return jsonify({
-            'success': True,
-            'ascii': ascii_art,
-            'width': width,
-            'height': len(ascii_art.split('\n'))
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/download/txt', methods=['POST'])
 def download_txt():
     """Tải xuống file .txt"""
@@ -233,7 +238,6 @@ def download_txt():
         ascii_art = data.get('ascii', '')
         filename = f"ascii_art_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
         
-        # Tạo file tạm
         temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8')
         temp_file.write(ascii_art)
         temp_file.close()
@@ -256,7 +260,6 @@ def download_html():
         ascii_art = data.get('ascii', '')
         filename = f"ascii_gallery_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
         
-        # Tạo nội dung HTML
         html_content = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -317,7 +320,6 @@ def download_html():
 </body>
 </html>"""
         
-        # Tạo file tạm
         temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8')
         temp_file.write(html_content)
         temp_file.close()
@@ -344,13 +346,10 @@ def download_image():
         text_color = data.get('text_color', '#9ef0ff')
         padding = int(data.get('padding', 20))
         
-        # Chuyển ASCII sang ảnh
         img = ascii_to_image(ascii_art, font_size, bg_color, text_color, padding)
         
-        # Lưu ảnh vào buffer
         img_buffer = io.BytesIO()
         
-        # Xác định định dạng và MIME type
         format_map = {
             'png': ('PNG', 'image/png'),
             'jpg': ('JPEG', 'image/jpeg'),
@@ -364,9 +363,7 @@ def download_image():
         
         pil_format, mime_type = format_map[format_type]
         
-        # Lưu ảnh
-        if format_type == 'jpg' or format_type == 'jpeg':
-            # Chuyển sang RGB nếu cần và lưu với quality cao
+        if format_type in ['jpg', 'jpeg']:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             img.save(img_buffer, format=pil_format, quality=95, optimize=True)
@@ -398,7 +395,7 @@ def escape_html(text):
 
 @app.route('/health')
 def health():
-    """Health check endpoint cho Render"""
+    """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()}), 200
 
 if __name__ == '__main__':
