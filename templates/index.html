@@ -203,6 +203,7 @@
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
 
         .btn-group {
@@ -232,6 +233,14 @@
             border-radius: 0.8rem;
             padding: 0.8rem;
             margin-top: 0.8rem;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .success {
+            color: #4ade80;
         }
 
         @media (max-width: 900px) {
@@ -388,6 +397,8 @@
 
 <script>
     (function() {
+        console.log("✅ Script loaded");
+        
         // DOM elements
         const fileInput = document.getElementById('imageUpload');
         const previewImg = document.getElementById('preview');
@@ -420,7 +431,6 @@
 
         let currentAscii = "";
         let currentFile = null;
-        let currentImageData = null;
 
         // Cập nhật giá trị hiển thị
         widthRange.addEventListener('input', () => {
@@ -430,39 +440,48 @@
             spaceVal.innerText = spaceDensity.value;
         });
 
-        // Xử lý tải ảnh
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
+        // Xử lý tải ảnh - QUAN TRỌNG
+        function handleImageFile(file) {
             if (!file) return;
             
             if (!file.type.startsWith('image/')) {
-                statusMsg.innerText = '❌ Vui lòng chọn file ảnh!';
+                statusMsg.innerHTML = '❌ Vui lòng chọn file ảnh!';
                 return;
             }
             
             currentFile = file;
+            console.log("File selected:", file.name, file.size, file.type);
+            statusMsg.innerHTML = '🔄 Đang đọc ảnh...';
             
             const reader = new FileReader();
             reader.onload = (ev) => {
                 previewImg.src = ev.target.result;
-                currentImageData = ev.target.result;
-                statusMsg.innerText = '✅ Ảnh đã tải. Nhấn "Chuyển đổi ASCII"';
+                console.log("Preview loaded");
+                statusMsg.innerHTML = '✅ Ảnh đã tải xong! Nhấn "Chuyển đổi ASCII"';
             };
             reader.onerror = (err) => {
                 console.error('FileReader error:', err);
-                statusMsg.innerText = '❌ Lỗi đọc file ảnh!';
+                statusMsg.innerHTML = '❌ Lỗi đọc file ảnh!';
             };
             reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            console.log("File input changed");
+            const file = e.target.files[0];
+            if (file) {
+                handleImageFile(file);
+            }
         });
 
         // Gửi request chuyển đổi
         async function performConversion() {
             if (!currentFile) {
-                statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
+                statusMsg.innerHTML = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
                 return;
             }
             
-            statusMsg.innerText = '🔄 Đang xử lý ảnh với các hiệu ứng...';
+            statusMsg.innerHTML = '🔄 Đang xử lý ảnh với các hiệu ứng...';
             convertBtn.disabled = true;
 
             const formData = new FormData();
@@ -482,28 +501,25 @@
             formData.append('space_density', spaceDensity.value);
 
             try {
+                console.log("Sending request to /convert");
                 const response = await fetch('/convert', {
                     method: 'POST',
                     body: formData
                 });
                 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Lỗi server');
-                }
-                
                 const result = await response.json();
+                console.log("Response:", result);
                 
                 if (result.success) {
                     asciiOutput.innerText = result.ascii;
                     currentAscii = result.ascii;
-                    statusMsg.innerText = `✅ Thành công! (${result.width}x${result.height})`;
+                    statusMsg.innerHTML = `✅ Thành công! (${result.width}x${result.height})`;
                 } else {
                     throw new Error(result.error || 'Lỗi không xác định');
                 }
             } catch (err) {
                 console.error('Conversion error:', err);
-                statusMsg.innerText = '❌ Lỗi: ' + err.message;
+                statusMsg.innerHTML = '❌ Lỗi: ' + err.message;
                 asciiOutput.innerText = '[ Lỗi xử lý ảnh ]\nVui lòng thử lại với ảnh khác.';
                 currentAscii = '';
             } finally {
@@ -516,11 +532,11 @@
         // Tải TXT
         downloadTxt.addEventListener('click', async () => {
             if (!currentAscii) {
-                statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+                statusMsg.innerHTML = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
                 return;
             }
             
-            statusMsg.innerText = '📄 Đang tạo file txt...';
+            statusMsg.innerHTML = '📄 Đang tạo file txt...';
             
             try {
                 const res = await fetch('/download/txt', {
@@ -538,21 +554,21 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                statusMsg.innerText = '📄 Đã tải file TXT';
+                statusMsg.innerHTML = '📄 Đã tải file TXT';
             } catch(e) {
                 console.error(e);
-                statusMsg.innerText = '❌ Lỗi tải TXT';
+                statusMsg.innerHTML = '❌ Lỗi tải TXT';
             }
         });
 
         // Tải PNG
         downloadPng.addEventListener('click', async () => {
             if (!currentAscii) {
-                statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+                statusMsg.innerHTML = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
                 return;
             }
             
-            statusMsg.innerText = '🖼️ Đang tạo ảnh PNG...';
+            statusMsg.innerHTML = '🖼️ Đang tạo ảnh PNG...';
             
             try {
                 const res = await fetch('/download/image', {
@@ -577,25 +593,25 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                statusMsg.innerText = '🖼️ Đã tải ảnh PNG';
+                statusMsg.innerHTML = '🖼️ Đã tải ảnh PNG';
             } catch(e) {
                 console.error(e);
-                statusMsg.innerText = '❌ Lỗi tạo ảnh';
+                statusMsg.innerHTML = '❌ Lỗi tạo ảnh';
             }
         });
 
         // Copy clipboard
         copyBtn.addEventListener('click', async () => {
             if (!currentAscii) {
-                statusMsg.innerText = '⚠️ Không có ASCII để sao chép';
+                statusMsg.innerHTML = '⚠️ Không có ASCII để sao chép';
                 return;
             }
             
             try {
                 await navigator.clipboard.writeText(currentAscii);
-                statusMsg.innerText = '📋 Đã sao chép ASCII!';
+                statusMsg.innerHTML = '📋 Đã sao chép ASCII!';
                 setTimeout(() => {
-                    if (currentAscii) statusMsg.innerText = '✅ Sẵn sàng';
+                    if (currentAscii) statusMsg.innerHTML = '✅ Sẵn sàng';
                 }, 1500);
             } catch(e) {
                 const ta = document.createElement('textarea');
@@ -604,7 +620,7 @@
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                statusMsg.innerText = '📋 Copy fallback thành công';
+                statusMsg.innerHTML = '📋 Copy fallback thành công';
             }
         });
 
@@ -627,7 +643,7 @@
             bgColor.value = '#000000';
             textColor.value = '#9ef0ff';
             fontSize.value = '14';
-            statusMsg.innerText = '🔄 Đã reset về mặc định.';
+            statusMsg.innerHTML = '🔄 Đã reset về mặc định.';
             if (currentFile) performConversion();
         });
 
@@ -649,22 +665,28 @@
             
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {
-                currentFile = file;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    previewImg.src = ev.target.result;
-                    currentImageData = ev.target.result;
-                    statusMsg.innerText = '📸 Kéo thả thành công! Nhấn "Chuyển đổi".';
-                };
-                reader.readAsDataURL(file);
+                handleImageFile(file);
             } else {
-                statusMsg.innerText = '❌ Chỉ chấp nhận file ảnh';
+                statusMsg.innerHTML = '❌ Chỉ chấp nhận file ảnh';
             }
         });
         
         zone.addEventListener('click', () => {
             fileInput.click();
         });
+        
+        // Test kết nối server
+        async function testServer() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                console.log("Server health:", data);
+            } catch(e) {
+                console.error("Cannot connect to server:", e);
+                statusMsg.innerHTML = '⚠️ Không kết nối được server!';
+            }
+        }
+        testServer();
     })();
 </script>
 </body>
