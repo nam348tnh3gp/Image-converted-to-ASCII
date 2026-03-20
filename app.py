@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 import numpy as np
@@ -8,7 +8,7 @@ import tempfile
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Bảng ký tự ASCII (từ tối đến sáng)
@@ -74,6 +74,65 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
     
     except Exception as e:
         raise Exception(f"Lỗi xử lý ảnh: {str(e)}")
+
+def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef0ff', padding=20):
+    """
+    Chuyển đổi ASCII art thành ảnh
+    
+    Args:
+        ascii_art: chuỗi ASCII art
+        font_size: kích thước font
+        bg_color: màu nền (hex)
+        text_color: màu chữ (hex)
+        padding: khoảng cách viền (pixel)
+    
+    Returns:
+        PIL Image object
+    """
+    try:
+        lines = ascii_art.split('\n')
+        
+        # Tìm font monospace (ưu tiên các font phổ biến)
+        font_paths = [
+            '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
+            '/System/Library/Fonts/Monaco.dfont',
+            'C:\\Windows\\Fonts\\consola.ttf',
+            None  # fallback to default
+        ]
+        
+        font = None
+        for font_path in font_paths:
+            try:
+                if font_path:
+                    font = ImageFont.truetype(font_path, font_size)
+                else:
+                    font = ImageFont.load_default()
+                break
+            except:
+                continue
+        
+        # Tính kích thước ảnh
+        char_width = font_size * 0.6  # Ước lượng chiều rộng ký tự monospace
+        char_height = font_size * 1.2
+        
+        img_width = int(len(max(lines, key=len)) * char_width) + (padding * 2)
+        img_height = int(len(lines) * char_height) + (padding * 2)
+        
+        # Tạo ảnh mới
+        img = Image.new('RGB', (img_width, img_height), color=bg_color)
+        draw = ImageDraw.Draw(img)
+        
+        # Vẽ từng dòng ASCII
+        y_offset = padding
+        for line in lines:
+            x_offset = padding
+            draw.text((x_offset, y_offset), line, font=font, fill=text_color)
+            y_offset += char_height
+        
+        return img
+    
+    except Exception as e:
+        raise Exception(f"Lỗi tạo ảnh: {str(e)}")
 
 @app.route('/')
 def index():
@@ -268,6 +327,61 @@ def download_html():
             as_attachment=True,
             download_name=filename,
             mimetype='text/html'
+        )
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/download/image', methods=['POST'])
+def download_image():
+    """Tải xuống ảnh (PNG, JPG, BMP, GIF)"""
+    try:
+        data = request.get_json()
+        ascii_art = data.get('ascii', '')
+        format_type = data.get('format', 'png').lower()
+        font_size = int(data.get('font_size', 14))
+        bg_color = data.get('bg_color', '#000000')
+        text_color = data.get('text_color', '#9ef0ff')
+        padding = int(data.get('padding', 20))
+        
+        # Chuyển ASCII sang ảnh
+        img = ascii_to_image(ascii_art, font_size, bg_color, text_color, padding)
+        
+        # Lưu ảnh vào buffer
+        img_buffer = io.BytesIO()
+        
+        # Xác định định dạng và MIME type
+        format_map = {
+            'png': ('PNG', 'image/png'),
+            'jpg': ('JPEG', 'image/jpeg'),
+            'jpeg': ('JPEG', 'image/jpeg'),
+            'bmp': ('BMP', 'image/bmp'),
+            'gif': ('GIF', 'image/gif')
+        }
+        
+        if format_type not in format_map:
+            format_type = 'png'
+        
+        pil_format, mime_type = format_map[format_type]
+        
+        # Lưu ảnh
+        if format_type == 'jpg' or format_type == 'jpeg':
+            # Chuyển sang RGB nếu cần và lưu với quality cao
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            img.save(img_buffer, format=pil_format, quality=95, optimize=True)
+        else:
+            img.save(img_buffer, format=pil_format)
+        
+        img_buffer.seek(0)
+        
+        filename = f"ascii_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{format_type}"
+        
+        return send_file(
+            img_buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype=mime_type
         )
     
     except Exception as e:
