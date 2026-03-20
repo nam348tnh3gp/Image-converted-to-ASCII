@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ASCII Art Studio - Chuyển ảnh sang ký tự nghệ thuật</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Fira Code', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+            color: #e3e6f0;
+            margin: 0;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(18, 25, 45, 0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 1.8rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(72, 187, 255, 0.1);
+            border: 1px solid rgba(80, 140, 210, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.3rem;
+            letter-spacing: 2px;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #c0e0ff, #80b5ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .sub {
+            text-align: center;
+            opacity: 0.75;
+            margin-bottom: 2rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .flex-panels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            justify-content: center;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 280px;
+            background: #0f172ad9;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            border: 1px solid #2d3a5e;
+        }
+
+        .panel h3 {
+            margin-top: 0;
+            border-left: 4px solid #3b82f6;
+            padding-left: 12px;
+            font-weight: 500;
+        }
+
+        .upload-area {
+            border: 2px dashed #3b82f6;
+            border-radius: 1.2rem;
+            padding: 1.8rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #0a0f1e80;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            background: #1e2a44;
+            border-color: #60a5fa;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px black;
+            background: #010101;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.2rem 0;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .param-group {
+            background: #0b1120;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .param-group label {
+            font-size: 0.85rem;
+        }
+
+        select, input[type="range"] {
+            background: #1e2a3a;
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 2rem;
+            font-family: monospace;
+            cursor: pointer;
+        }
+
+        button {
+            background: #2563eb;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            color: white;
+            font-family: monospace;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        button:hover {
+            background: #3b82f6;
+            transform: scale(0.97);
+        }
+
+        .ascii-container {
+            background: #03060c;
+            padding: 1rem;
+            border-radius: 1rem;
+            overflow-x: auto;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #9ef0ff;
+            max-height: 520px;
+            border: 1px solid #2d3e6e;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .ascii-art {
+            margin: 0;
+            font-size: inherit;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 1.2rem;
+            justify-content: center;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            margin-top: 0.8rem;
+            text-align: center;
+            color: #86b3ff;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+        @media (max-width: 800px) {
+            .ascii-container { font-size: 8px; }
+            .container { padding: 1rem; }
+        }
+        .brightness-slider {
+            width: 140px;
+        }
+        .char-set-badge {
+            font-size: 0.7rem;
+            background: #1e2a44;
+            border-radius: 12px;
+            padding: 2px 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>◢ ASCII ART STUDIO ◣</h1>
+    <div class="sub">⚡ Ảnh → Ký tự nghệ thuật | Tùy chỉnh độ sáng, kích thước, bảng ký tự ⚡</div>
+
+    <div class="flex-panels">
+        <!-- Bảng nhập liệu -->
+        <div class="panel">
+            <h3>📂 1. Tải ảnh lên</h3>
+            <div class="upload-area" id="uploadZone">
+                📸 Nhấn để chọn ảnh (JPG, PNG, GIF, WEBP, BMP...)
+                <input type="file" id="imageUpload" accept="image/*">
+            </div>
+            <div style="text-align: center;">
+                <img id="preview" class="preview-img" alt="Xem trước" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a2538'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236b8cce' font-size='14' font-family='monospace'%3EChưa có ảnh%3C/text%3E%3C/svg%3E">
+            </div>
+            <div class="controls">
+                <div class="param-group">
+                    <span>📏 Chiều rộng (col)</span>
+                    <input type="range" id="widthRange" min="40" max="240" step="4" value="100">
+                    <span id="widthVal">100</span>
+                </div>
+                <div class="param-group">
+                    <span>🔆 Độ sáng</span>
+                    <input type="range" id="brightness" min="0.4" max="2.2" step="0.02" value="1.0">
+                    <span id="brightVal">1.00</span>
+                </div>
+                <div class="param-group">
+                    <span>🎨 Bảng ký tự</span>
+                    <select id="charSetSelect">
+                        <option value="classic">🌑 Classic (灰度细腻)</option>
+                        <option value="blocks">█▓▒░ Blocks (Khối đậm)</option>
+                        <option value="simple">•-+=*#%@@ (Tương phản cao)</option>
+                        <option value="retro">@%#*+=-:. (Retro)</option>
+                        <option value="custom">✏️ Tuỳ chỉnh</option>
+                    </select>
+                </div>
+                <div class="param-group" id="customCharGroup" style="display: none;">
+                    <span>🔣 Chuỗi ký tự (tối → sáng)</span>
+                    <input type="text" id="customChars" placeholder="VD:  .:-=+*#%@" value=" .:-=+*#%@" style="width:160px;">
+                </div>
+            </div>
+            <button id="convertBtn">✨ CHUYỂN ĐỔI ASCII ✨</button>
+            <div class="status" id="statusMsg">✅ Sẵn sàng | Tải ảnh lên và nhấn chuyển đổi</div>
+        </div>
+
+        <!-- Bảng hiển thị ASCII + tải về -->
+        <div class="panel">
+            <h3>🖨️ 2. ASCII Art xuất ra</h3>
+            <div class="ascii-container" id="asciiContainer">
+                <pre id="asciiOutput" class="ascii-art">██╗   ██╗███████╗██████╗ ███████╗██████╗ 
+╚██╗ ██╔╝██╔════╝██╔══██╗██╔════╝██╔══██╗
+ ╚████╔╝ █████╗  ██████╔╝█████╗  ██████╔╝
+  ╚██╔╝  ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗
+   ██║   ███████╗██║  ██║███████╗██║  ██║
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+   [ Chờ ảnh và chuyển đổi... ]</pre>
+            </div>
+            <div class="download-buttons">
+                <button id="downloadTxtBtn">📄 Tải .txt</button>
+                <button id="downloadHtmlBtn">🌐 Tải .html (xem web)</button>
+                <button id="copyClipboardBtn">📋 Sao chép</button>
+            </div>
+            <div class="status" id="infoDownload">⬇️ Tải xuống với nhiều định dạng</div>
+        </div>
+    </div>
+    <footer>⚙️ Thuật toán chuyển đổi dựa trên độ xám | Hỗ trợ mọi ảnh | Render-ready</footer>
+</div>
+
+<script>
+    (function() {
+        // DOM elements
+        const fileInput = document.getElementById('imageUpload');
+        const previewImg = document.getElementById('preview');
+        const convertBtn = document.getElementById('convertBtn');
+        const asciiOutput = document.getElementById('asciiOutput');
+        const widthRange = document.getElementById('widthRange');
+        const widthVal = document.getElementById('widthVal');
+        const brightnessSlider = document.getElementById('brightness');
+        const brightVal = document.getElementById('brightVal');
+        const charSetSelect = document.getElementById('charSetSelect');
+        const customCharGroup = document.getElementById('customCharGroup');
+        const customCharsInput = document.getElementById('customChars');
+        const statusMsg = document.getElementById('statusMsg');
+        const downloadTxt = document.getElementById('downloadTxtBtn');
+        const downloadHtml = document.getElementById('downloadHtmlBtn');
+        const copyBtn = document.getElementById('copyClipboardBtn');
+
+        let currentAscii = "";          // lưu trữ ascii hiện tại
+        let currentImageData = null;    // lưu image element để convert lại
+
+        // Bảng ký tự mặc định (từ tối → sáng)
+        const charSets = {
+            classic: " .:-=+*#%@",
+            blocks: "  ░▒▓█",
+            simple: " .-+=*#%@@",
+            retro: "@%#*+=-:. ",
+            custom: " .:-=+*#%@"   // tạm
+        };
+
+        // Cập nhật hiển thị custom
+        function toggleCustom() {
+            if (charSetSelect.value === 'custom') {
+                customCharGroup.style.display = 'flex';
+                // Nếu người dùng chưa set custom thì lấy từ classic
+                if (!customCharsInput.value.trim()) {
+                    customCharsInput.value = charSets.classic;
+                }
+            } else {
+                customCharGroup.style.display = 'none';
+            }
+        }
+        charSetSelect.addEventListener('change', toggleCustom);
+        toggleCustom();
+
+        // cập nhật giá trị slider
+        widthRange.addEventListener('input', () => {
+            widthVal.innerText = widthRange.value;
+        });
+        brightnessSlider.addEventListener('input', () => {
+            brightVal.innerText = parseFloat(brightnessSlider.value).toFixed(2);
+        });
+
+        // Xử lý tải ảnh
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                statusMsg.innerText = '❌ Vui lòng chọn file ảnh hợp lệ!';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    previewImg.src = ev.target.result;
+                    currentImageData = img;
+                    statusMsg.innerText = '✅ Ảnh đã tải xong. Nhấn "Chuyển đổi ASCII"';
+                    // tự động set ascii ban đầu?
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Hàm lấy bảng ký tự dựa trên lựa chọn
+        function getCharSet() {
+            let charset = charSets[charSetSelect.value];
+            if (charSetSelect.value === 'custom') {
+                let customStr = customCharsInput.value.trim();
+                if (customStr === "") customStr = " .:-=+*#%@";
+                charset = customStr;
+            }
+            // Đảm bảo có ít nhất 2 ký tự, nếu không thì fallback
+            if (!charset || charset.length < 2) charset = " .-+#";
+            return charset;
+        }
+
+        // Chuyển đổi ảnh -> ascii (dựa trên canvas và độ xám)
+        function imageToAscii(imgElement, widthChars, brightnessFactor, charsetStr) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const originalWidth = imgElement.width;
+                    const originalHeight = imgElement.height;
+                    const aspect = originalHeight / originalWidth;
+                    let heightChars = Math.floor(widthChars * aspect * 0.45); // điều chỉnh tỉ lệ dòng (monospace)
+                    if (heightChars < 1) heightChars = 1;
+                    
+                    // Tạo canvas tạm
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = widthChars;
+                    canvas.height = heightChars;
+                    // vẽ ảnh thu nhỏ
+                    ctx.drawImage(imgElement, 0, 0, widthChars, heightChars);
+                    const imageData = ctx.getImageData(0, 0, widthChars, heightChars);
+                    const data = imageData.data;
+                    
+                    const charArr = charsetStr.split('');
+                    const maxIndex = charArr.length - 1;
+                    
+                    let asciiLines = [];
+                    for (let y = 0; y < heightChars; y++) {
+                        let line = '';
+                        for (let x = 0; x < widthChars; x++) {
+                            const idx = (y * widthChars + x) * 4;
+                            let r = data[idx];
+                            let g = data[idx+1];
+                            let b = data[idx+2];
+                            // grayscale công thức 0.299R + 0.587G + 0.114B
+                            let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                            // điều chỉnh độ sáng
+                            gray = gray * brightnessFactor;
+                            gray = Math.min(255, Math.max(0, gray));
+                            // map 0-255 → chỉ số char
+                            let charIndex = Math.floor((gray / 255) * maxIndex);
+                            charIndex = Math.min(maxIndex, Math.max(0, charIndex));
+                            let asciiChar = charArr[charIndex];
+                            // đảm bảo nếu char rỗng thì thay bằng space
+                            if (!asciiChar && asciiChar !== ' ') asciiChar = ' ';
+                            line += asciiChar;
+                        }
+                        asciiLines.push(line);
+                    }
+                    resolve(asciiLines.join('\n'));
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        // Thực hiện chuyển đổi và hiển thị
+        async function performConversion() {
+            if (!currentImageData) {
+                statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên trước.';
+                return;
+            }
+            statusMsg.innerText = '🔄 Đang xử lý pixel... vui lòng chờ';
+            const width = parseInt(widthRange.value, 10);
+            const brightness = parseFloat(brightnessSlider.value);
+            let charset = getCharSet();
+            
+            try {
+                const asciiArt = await imageToAscii(currentImageData, width, brightness, charset);
+                if (asciiArt && asciiArt.length > 0) {
+                    asciiOutput.innerText = asciiArt;
+                    currentAscii = asciiArt;
+                    statusMsg.innerText = '✅ Chuyển đổi thành công! Bạn có thể tải xuống hoặc sao chép.';
+                } else {
+                    asciiOutput.innerText = '[ Lỗi: không tạo được ASCII ]';
+                    currentAscii = '';
+                    statusMsg.innerText = '❌ Chuyển đổi thất bại, thử lại với ảnh khác.';
+                }
+            } catch (err) {
+                console.error(err);
+                asciiOutput.innerText = '[ Lỗi xử lý ảnh, thử lại ]';
+                statusMsg.innerText = '⚠️ Lỗi chuyển đổi: ' + err.message;
+                currentAscii = '';
+            }
+        }
+
+        convertBtn.addEventListener('click', performConversion);
+
+        // Tải file .txt
+        function downloadAsTxt(content, filename = "ascii_art.txt") {
+            const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Tải file HTML với style monospace và responsive
+        function downloadAsHtml(content, filename = "ascii_art.html") {
+            const htmlTemplate = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Export</title>
+    <style>
+        body {
+            background: #0b1120;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            font-family: 'Courier New', 'Fira Code', monospace;
+        }
+        .art-container {
+            background: #01060c;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            overflow-x: auto;
+            white-space: pre;
+        }
+        pre {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.2;
+            color: #b7e4ff;
+            font-family: monospace;
+        }
+        @media (max-width: 700px) {
+            pre { font-size: 8px; }
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #5a7d9a;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="art-container">
+        <pre>${escapeHtml(content)}</pre>
+    </div>
+    <div class="footer">✨ ASCII Art generated by ASCII Studio</div>
+</div>
+</body>
+</html>`;
+            const blob = new Blob([htmlTemplate], {type: "text/html;charset=utf-8"});
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+                return c;
+            });
+        }
+
+        // Sao chép vào clipboard
+        async function copyToClipboard() {
+            if (!currentAscii || currentAscii.trim() === '') {
+                statusMsg.innerText = '⚠️ Không có ASCII để sao chép, hãy chuyển đổi trước.';
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentAscii);
+                statusMsg.innerText = '📋 Đã sao chép ASCII art vào clipboard!';
+                setTimeout(() => {
+                    if (currentAscii) statusMsg.innerText = '✅ ASCII sẵn sàng';
+                    else statusMsg.innerText = '🖼️ Chuyển đổi ASCII để sao chép';
+                }, 2000);
+            } catch (err) {
+                // fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = currentAscii;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                statusMsg.innerText = '📋 Đã sao chép (fallback)';
+            }
+        }
+
+        downloadTxt.addEventListener('click', () => {
+            if (!currentAscii) {
+                statusMsg.innerText = '❌ Không có dữ liệu ASCII, hãy chuyển đổi ảnh trước!';
+                return;
+            }
+            downloadAsTxt(currentAscii, `ascii_${Date.now()}.txt`);
+            statusMsg.innerText = '⬇️ Đã tải file .txt thành công';
+        });
+
+        downloadHtml.addEventListener('click', () => {
+            if (!currentAscii) {
+                statusMsg.innerText = '❌ Chưa có ASCII, vui lòng chuyển đổi ảnh.';
+                return;
+            }
+            downloadAsHtml(currentAscii, `ascii_gallery_${Date.now()}.html`);
+            statusMsg.innerText = '🌐 Đã xuất file HTML (giữ nguyên định dạng)';
+        });
+
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        // Kéo thả ảnh vào khu vực upload (tính năng thêm)
+        const uploadZone = document.getElementById('uploadZone');
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.background = '#1f2c48';
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.background = '#0a0f1e80';
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.background = '#0a0f1e80';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        previewImg.src = ev.target.result;
+                        currentImageData = img;
+                        statusMsg.innerText = '📸 Ảnh đã được kéo thả thành công! Nhấn "Chuyển đổi".';
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                statusMsg.innerText = '❌ Vui lòng thả file ảnh hợp lệ.';
+            }
+        });
+        uploadZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // tự động khi slider thay đổi có thể convert lại? nhưng để người dùng chủ động
+        // thêm tiện ích: nếu người dùng thay đổi thông số và muốn convert nhanh, vẫn có nút convert.
+        // mặc định preview mẫu 
+        function setDemoPlaceholder() {
+            if(!currentAscii) {
+                asciiOutput.innerText = `██╗   ██╗███████╗██████╗ ███████╗██████╗ 
+╚██╗ ██╔╝██╔════╝██╔══██╗██╔════╝██╔══██╗
+ ╚████╔╝ █████╗  ██████╔╝█████╗  ██████╔╝
+  ╚██╔╝  ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗
+   ██║   ███████╗██║  ██║███████╗██║  ██║
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+[ Tải ảnh lên và nhấn chuyển đổi ]`;
+            }
+        }
+        setDemoPlaceholder();
+    })();
+</script>
+</body>
+</html>
