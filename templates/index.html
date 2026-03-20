@@ -9,7 +9,6 @@
     <style>
         * {
             box-sizing: border-box;
-            user-select: none;
         }
 
         body {
@@ -55,7 +54,6 @@
             gap: 1.5rem;
         }
 
-        /* Panel trái - Controls */
         .controls-panel {
             flex: 1.2;
             min-width: 320px;
@@ -65,7 +63,6 @@
             border: 1px solid #2d3a5e;
         }
 
-        /* Panel phải - Preview & Output */
         .output-panel {
             flex: 2;
             min-width: 400px;
@@ -203,6 +200,11 @@
             transform: scale(0.98);
         }
 
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .btn-group {
             display: flex;
             flex-wrap: wrap;
@@ -216,9 +218,6 @@
         }
         .btn-warning {
             background: #f59e0b;
-        }
-        .btn-danger {
-            background: #ef4444;
         }
 
         .status {
@@ -247,7 +246,6 @@
     <div class="sub">⚡ Ảnh → Ký tự nghệ thuật | Tùy chỉnh chuyên sâu | Xuất TXT, PNG ⚡</div>
 
     <div class="main-grid">
-        <!-- PANEL ĐIỀU KHIỂN BÊN TRÁI -->
         <div class="controls-panel">
             <div class="upload-area" id="uploadZone">
                 📸 Nhấn / Kéo thả ảnh (JPG, PNG, GIF, WEBP...)
@@ -258,8 +256,8 @@
             <div class="section-title">🎨 CHỈNH SỬA ẢNH</div>
             
             <div class="control-group">
-                <div class="control-label"><span>Characters (Độ rộng)</span><span id="widthVal">100</span></div>
-                <input type="range" id="widthRange" min="40" max="240" step="2" value="100">
+                <div class="control-label"><span>Characters (Độ rộng 40-400)</span><span id="widthVal">100</span></div>
+                <input type="range" id="widthRange" min="40" max="400" step="2" value="100">
             </div>
 
             <div class="row-2cols">
@@ -347,7 +345,6 @@
             <div class="status" id="statusMsg">📌 Sẵn sàng | Tải ảnh lên và điều chỉnh thông số</div>
         </div>
 
-        <!-- PANEL KẾT QUẢ BÊN PHẢI -->
         <div class="output-panel">
             <div class="section-title">🖨️ ASCII ART KẾT QUẢ</div>
             <div class="ascii-container" id="asciiContainer">
@@ -423,34 +420,48 @@
 
         let currentAscii = "";
         let currentFile = null;
+        let currentImageData = null;
 
         // Cập nhật giá trị hiển thị
-        widthRange.addEventListener('input', () => widthVal.innerText = widthRange.value);
-        spaceDensity.addEventListener('input', () => spaceVal.innerText = spaceDensity.value);
+        widthRange.addEventListener('input', () => {
+            widthVal.innerText = widthRange.value;
+        });
+        spaceDensity.addEventListener('input', () => {
+            spaceVal.innerText = spaceDensity.value;
+        });
 
         // Xử lý tải ảnh
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            
             if (!file.type.startsWith('image/')) {
                 statusMsg.innerText = '❌ Vui lòng chọn file ảnh!';
                 return;
             }
+            
             currentFile = file;
+            
             const reader = new FileReader();
             reader.onload = (ev) => {
                 previewImg.src = ev.target.result;
+                currentImageData = ev.target.result;
                 statusMsg.innerText = '✅ Ảnh đã tải. Nhấn "Chuyển đổi ASCII"';
+            };
+            reader.onerror = (err) => {
+                console.error('FileReader error:', err);
+                statusMsg.innerText = '❌ Lỗi đọc file ảnh!';
             };
             reader.readAsDataURL(file);
         });
 
-        // Gửi request chuyển đổi với tất cả tham số
+        // Gửi request chuyển đổi
         async function performConversion() {
             if (!currentFile) {
                 statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
                 return;
             }
+            
             statusMsg.innerText = '🔄 Đang xử lý ảnh với các hiệu ứng...';
             convertBtn.disabled = true;
 
@@ -475,18 +486,25 @@
                     method: 'POST',
                     body: formData
                 });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Lỗi server');
+                }
+                
                 const result = await response.json();
+                
                 if (result.success) {
                     asciiOutput.innerText = result.ascii;
                     currentAscii = result.ascii;
                     statusMsg.innerText = `✅ Thành công! (${result.width}x${result.height})`;
                 } else {
-                    throw new Error(result.error || 'Lỗi server');
+                    throw new Error(result.error || 'Lỗi không xác định');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Conversion error:', err);
                 statusMsg.innerText = '❌ Lỗi: ' + err.message;
-                asciiOutput.innerText = '[ Lỗi xử lý ảnh ]';
+                asciiOutput.innerText = '[ Lỗi xử lý ảnh ]\nVui lòng thử lại với ảnh khác.';
                 currentAscii = '';
             } finally {
                 convertBtn.disabled = false;
@@ -497,28 +515,45 @@
 
         // Tải TXT
         downloadTxt.addEventListener('click', async () => {
-            if (!currentAscii) { statusMsg.innerText = '❌ Chưa có ASCII!'; return; }
+            if (!currentAscii) {
+                statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+                return;
+            }
+            
+            statusMsg.innerText = '📄 Đang tạo file txt...';
+            
             try {
                 const res = await fetch('/download/txt', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ascii: currentAscii })
                 });
+                
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `ascii_${Date.now()}.txt`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 statusMsg.innerText = '📄 Đã tải file TXT';
-            } catch(e) { statusMsg.innerText = '❌ Lỗi tải TXT'; }
+            } catch(e) {
+                console.error(e);
+                statusMsg.innerText = '❌ Lỗi tải TXT';
+            }
         });
 
-        // Tải PNG (sử dụng endpoint /download/image)
+        // Tải PNG
         downloadPng.addEventListener('click', async () => {
-            if (!currentAscii) { statusMsg.innerText = '❌ Chưa có ASCII!'; return; }
+            if (!currentAscii) {
+                statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+                return;
+            }
+            
             statusMsg.innerText = '🖼️ Đang tạo ảnh PNG...';
+            
             try {
                 const res = await fetch('/download/image', {
                     method: 'POST',
@@ -532,24 +567,36 @@
                         padding: parseInt(paddingInput.value)
                     })
                 });
+                
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `ascii_image_${Date.now()}.png`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 statusMsg.innerText = '🖼️ Đã tải ảnh PNG';
-            } catch(e) { statusMsg.innerText = '❌ Lỗi tạo ảnh'; }
+            } catch(e) {
+                console.error(e);
+                statusMsg.innerText = '❌ Lỗi tạo ảnh';
+            }
         });
 
         // Copy clipboard
         copyBtn.addEventListener('click', async () => {
-            if (!currentAscii) { statusMsg.innerText = '⚠️ Không có ASCII'; return; }
+            if (!currentAscii) {
+                statusMsg.innerText = '⚠️ Không có ASCII để sao chép';
+                return;
+            }
+            
             try {
                 await navigator.clipboard.writeText(currentAscii);
                 statusMsg.innerText = '📋 Đã sao chép ASCII!';
-                setTimeout(() => statusMsg.innerText = '✅ Sẵn sàng', 1500);
+                setTimeout(() => {
+                    if (currentAscii) statusMsg.innerText = '✅ Sẵn sàng';
+                }, 1500);
             } catch(e) {
                 const ta = document.createElement('textarea');
                 ta.value = currentAscii;
@@ -561,7 +608,7 @@
             }
         });
 
-        // Reset tất cả slider về giá trị mặc định
+        // Reset
         resetBtn.addEventListener('click', () => {
             widthRange.value = '100'; widthVal.innerText = '100';
             brightness.value = '100';
@@ -580,26 +627,44 @@
             bgColor.value = '#000000';
             textColor.value = '#9ef0ff';
             fontSize.value = '14';
-            statusMsg.innerText = '🔄 Đã reset về mặc định. Nhấn "Chuyển đổi" để áp dụng.';
+            statusMsg.innerText = '🔄 Đã reset về mặc định.';
             if (currentFile) performConversion();
         });
 
         // Kéo thả ảnh
         const zone = document.getElementById('uploadZone');
-        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.background = '#1f2c48'; });
-        zone.addEventListener('dragleave', () => { zone.style.background = '#0a0f1e60'; });
+        
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.style.background = '#1f2c48';
+        });
+        
+        zone.addEventListener('dragleave', () => {
+            zone.style.background = '#0a0f1e60';
+        });
+        
         zone.addEventListener('drop', (e) => {
             e.preventDefault();
             zone.style.background = '#0a0f1e60';
+            
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {
                 currentFile = file;
                 const reader = new FileReader();
-                reader.onload = (ev) => { previewImg.src = ev.target.result; statusMsg.innerText = '📸 Kéo thả thành công!'; };
+                reader.onload = (ev) => {
+                    previewImg.src = ev.target.result;
+                    currentImageData = ev.target.result;
+                    statusMsg.innerText = '📸 Kéo thả thành công! Nhấn "Chuyển đổi".';
+                };
                 reader.readAsDataURL(file);
-            } else statusMsg.innerText = '❌ Chỉ chấp nhận file ảnh';
+            } else {
+                statusMsg.innerText = '❌ Chỉ chấp nhận file ảnh';
+            }
         });
-        zone.addEventListener('click', () => fileInput.click());
+        
+        zone.addEventListener('click', () => {
+            fileInput.click();
+        });
     })();
 </script>
 </body>
