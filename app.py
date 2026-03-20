@@ -3,35 +3,52 @@ import io
 import base64
 import os
 import tempfile
+import sys
 from datetime import datetime
+import warnings
+
+# Tắt warnings không cần thiết
+warnings.filterwarnings('ignore')
+
+print(f"🐍 Python version: {sys.version}")
+print(f"📍 Current directory: {os.getcwd()}")
 
 # Import với xử lý lỗi
 try:
     from PIL import Image, ImageDraw, ImageFont
+    print(f"✅ Pillow version: {Image.__version__ if hasattr(Image, '__version__') else 'unknown'}")
 except ImportError as e:
-    print(f"Error importing PIL: {e}")
-    # Fallback: tạo class giả nếu cần
+    print(f"❌ Error importing Pillow: {e}")
+    # Fallback
     class Image:
         pass
+    class ImageDraw:
+        pass
+    class ImageFont:
+        @staticmethod
+        def load_default():
+            return None
 
 try:
     import numpy as np
+    print(f"✅ NumPy version: {np.__version__}")
 except ImportError as e:
-    print(f"Error importing numpy: {e}")
-    # Fallback: tạo class giả
+    print(f"❌ Error importing NumPy: {e}")
+    # Fallback
     class np:
         @staticmethod
         def array(data, dtype=None):
             return data
         @staticmethod
         def clip(data, min_val, max_val):
-            return data
+            return min(max(data, min_val), max_val)
+        __version__ = "0.0.0"
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Bảng ký tự ASCII (từ tối đến sáng)
+# Bảng ký tự ASCII
 CHAR_SETS = {
     'classic': " .:-=+*#%@",
     'blocks': "  ░▒▓█",
@@ -43,10 +60,10 @@ CHAR_SETS = {
 
 def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
     """
-    Chuyển đổi ảnh thành ASCII art
+    Chuyển đổi ảnh thành ASCII art - Tương thích Python 3.14
     """
     try:
-        # Mở ảnh nếu là bytes
+        # Mở ảnh
         if isinstance(image_data, bytes):
             img = Image.open(io.BytesIO(image_data))
         else:
@@ -55,7 +72,7 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
         # Chuyển sang grayscale
         img = img.convert('L')
         
-        # Tính toán chiều cao dựa trên aspect ratio
+        # Tính chiều cao
         original_width, original_height = img.size
         aspect_ratio = original_height / original_width
         height = int(width * aspect_ratio * 0.45)
@@ -63,7 +80,12 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
             height = 1
         
         # Resize ảnh
-        img = img.resize((width, height), Image.Resampling.LANCZOS)
+        try:
+            # Thử dùng LANCZOS trước
+            img = img.resize((width, height), Image.Resampling.LANCZOS)
+        except AttributeError:
+            # Fallback cho phiên bản cũ
+            img = img.resize((width, height), Image.LANCZOS)
         
         # Lấy dữ liệu pixel
         pixels = np.array(img, dtype=np.float32)
@@ -75,16 +97,16 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
         chars = list(charset_str)
         max_index = len(chars) - 1
         
-        # Chuyển đổi từng pixel thành ký tự
+        # Chuyển đổi từng pixel
         ascii_lines = []
         for y in range(height):
-            line = ''
+            line_parts = []
             for x in range(width):
                 gray_value = int(pixels[y, x])
                 char_index = int((gray_value / 255) * max_index)
                 char_index = min(max_index, max(0, char_index))
-                line += chars[char_index]
-            ascii_lines.append(line)
+                line_parts.append(chars[char_index])
+            ascii_lines.append(''.join(line_parts))
         
         return '\n'.join(ascii_lines)
     
@@ -93,30 +115,32 @@ def image_to_ascii(image_data, width, brightness=1.0, charset_str=" .:-=+*#%@"):
 
 def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef0ff', padding=20):
     """
-    Chuyển đổi ASCII art thành ảnh
+    Chuyển đổi ASCII art thành ảnh - Tương thích Python 3.14
     """
     try:
         lines = ascii_art.split('\n')
+        if not lines:
+            lines = ['']
         
         # Tìm font monospace
+        font = None
         font_paths = [
             '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
-            '/System/Library/Fonts/Monaco.dfont',
-            'C:\\Windows\\Fonts\\consola.ttf',
+            '/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf',
             None
         ]
         
-        font = None
         for font_path in font_paths:
             try:
-                if font_path:
+                if font_path and os.path.exists(font_path):
                     font = ImageFont.truetype(font_path, font_size)
-                else:
-                    font = ImageFont.load_default()
-                break
+                    break
             except:
                 continue
+        
+        if font is None:
+            font = ImageFont.load_default()
         
         # Tính kích thước ảnh
         char_width = font_size * 0.6
@@ -126,15 +150,14 @@ def ascii_to_image(ascii_art, font_size=12, bg_color='#000000', text_color='#9ef
         img_width = int(max_line_length * char_width) + (padding * 2)
         img_height = int(len(lines) * char_height) + (padding * 2)
         
-        # Tạo ảnh mới
+        # Tạo ảnh
         img = Image.new('RGB', (img_width, img_height), color=bg_color)
         draw = ImageDraw.Draw(img)
         
-        # Vẽ từng dòng ASCII
+        # Vẽ từng dòng
         y_offset = padding
         for line in lines:
-            x_offset = padding
-            draw.text((x_offset, y_offset), line, font=font, fill=text_color)
+            draw.text((padding, y_offset), line, font=font, fill=text_color)
             y_offset += char_height
         
         return img
@@ -160,7 +183,7 @@ def ads_txt():
                 as_attachment=False
             )
         else:
-            # Trả về nội dung mẫu nếu không có file
+            # Tạo nội dung mẫu
             sample_content = """# ads.txt file for ASCII Art Studio
 # Replace this with your actual ads.txt content
 google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
@@ -259,6 +282,14 @@ def download_html():
         data = request.get_json()
         ascii_art = data.get('ascii', '')
         filename = f"ascii_gallery_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        
+        def escape_html(text):
+            return (text
+                    .replace('&', '&amp;')
+                    .replace('<', '&lt;')
+                    .replace('>', '&gt;')
+                    .replace('"', '&quot;')
+                    .replace("'", '&#39;'))
         
         html_content = f"""<!DOCTYPE html>
 <html lang="vi">
@@ -384,19 +415,14 @@ def download_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def escape_html(text):
-    """Escape HTML special characters"""
-    return (text
-            .replace('&', '&amp;')
-            .replace('<', '&lt;')
-            .replace('>', '&gt;')
-            .replace('"', '&quot;')
-            .replace("'", '&#39;'))
-
 @app.route('/health')
 def health():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()}), 200
+    return jsonify({
+        'status': 'healthy',
+        'python_version': sys.version,
+        'timestamp': datetime.now().isoformat()
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
