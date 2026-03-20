@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4257712618696739"
-     crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4257712618696739" crossorigin="anonymous"></script>
     <title>ASCII Art Studio Pro - Chuyển ảnh sang ký tự nghệ thuật</title>
     <style>
         * {
@@ -24,7 +23,6 @@
             max-width: 1600px;
             margin: 0 auto;
             background: rgba(18, 25, 45, 0.85);
-            backdrop-filter: blur(3px);
             border-radius: 1.5rem;
             padding: 1.5rem;
             box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
@@ -34,7 +32,7 @@
         h1 {
             text-align: center;
             font-size: 2rem;
-            margin: 0 0 0.3rem 0;
+            margin: 0 0 0.3rem;
             background: linear-gradient(135deg, #c0e0ff, #80b5ff);
             -webkit-background-clip: text;
             background-clip: text;
@@ -54,28 +52,27 @@
             gap: 1.5rem;
         }
 
-        .controls-panel {
-            flex: 1.2;
-            min-width: 320px;
+        .controls-panel, .output-panel {
             background: #0f172ae0;
             border-radius: 1.2rem;
             padding: 1.2rem;
             border: 1px solid #2d3a5e;
+        }
+
+        .controls-panel {
+            flex: 1.2;
+            min-width: 320px;
         }
 
         .output-panel {
             flex: 2;
             min-width: 400px;
-            background: #0f172ae0;
-            border-radius: 1.2rem;
-            padding: 1.2rem;
-            border: 1px solid #2d3a5e;
         }
 
         .section-title {
             font-size: 0.9rem;
             font-weight: bold;
-            margin: 1rem 0 0.8rem 0;
+            margin: 1rem 0 0.8rem;
             padding-bottom: 0.3rem;
             border-bottom: 1px solid #3b82f6;
             color: #80b5ff;
@@ -105,10 +102,6 @@
             -webkit-appearance: none;
         }
 
-        input[type="range"]:focus {
-            outline: none;
-        }
-
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
@@ -124,7 +117,6 @@
             color: white;
             padding: 0.4rem 0.6rem;
             border-radius: 0.5rem;
-            font-family: monospace;
             width: 100%;
         }
 
@@ -179,7 +171,6 @@
 
         .ascii-art {
             margin: 0;
-            font-size: inherit;
             white-space: pre;
         }
 
@@ -190,7 +181,6 @@
             border-radius: 0.5rem;
             font-weight: bold;
             color: white;
-            font-family: monospace;
             cursor: pointer;
             transition: 0.2s;
         }
@@ -203,7 +193,6 @@
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
         .btn-group {
@@ -217,6 +206,7 @@
         .btn-success {
             background: #10b981;
         }
+
         .btn-warning {
             background: #f59e0b;
         }
@@ -235,17 +225,8 @@
             margin-top: 0.8rem;
         }
 
-        .error {
-            color: #f87171;
-        }
-
-        .success {
-            color: #4ade80;
-        }
-
         @media (max-width: 900px) {
             .ascii-container { font-size: 7px; }
-            .controls-panel, .output-panel { min-width: 280px; }
         }
     </style>
 </head>
@@ -255,12 +236,13 @@
     <div class="sub">⚡ Ảnh → Ký tự nghệ thuật | Tùy chỉnh chuyên sâu | Xuất TXT, PNG ⚡</div>
 
     <div class="main-grid">
+        <!-- Panel trái -->
         <div class="controls-panel">
             <div class="upload-area" id="uploadZone">
                 📸 Nhấn / Kéo thả ảnh (JPG, PNG, GIF, WEBP...)
                 <input type="file" id="imageUpload" accept="image/*">
             </div>
-            <img id="preview" class="preview-img" alt="Preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a2538'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236b8cce' font-size='14'%3EChưa có ảnh%3C/text%3E%3C/svg%3E">
+            <img id="preview" class="preview-img" alt="Preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a2538'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%236b8cce' font-size='14'%3EChưa có ảnh%3C/text%3E%3C/svg%3E">
 
             <div class="section-title">🎨 CHỈNH SỬA ẢNH</div>
             
@@ -342,7 +324,7 @@
             <div class="control-group">
                 <div class="control-label">Space Density (1-5)</div>
                 <input type="range" id="spaceDensity" min="1" max="5" step="1" value="1">
-                <span id="spaceVal" style="font-size:12px">1</span>
+                <span id="spaceVal">1</span>
             </div>
 
             <div class="control-group">
@@ -350,13 +332,14 @@
                 <input type="number" id="padding" min="0" max="100" value="20" step="2">
             </div>
 
-            <button id="convertBtn" style="width:100%; margin-top:0.5rem;">✨ CHUYỂN ĐỔI ASCII ✨</button>
-            <div class="status" id="statusMsg">📌 Sẵn sàng | Tải ảnh lên và điều chỉnh thông số</div>
+            <button id="convertBtn">✨ CHUYỂN ĐỔI ASCII ✨</button>
+            <div class="status" id="statusMsg">📌 Sẵn sàng | Tải ảnh lên và nhấn chuyển đổi</div>
         </div>
 
+        <!-- Panel phải -->
         <div class="output-panel">
             <div class="section-title">🖨️ ASCII ART KẾT QUẢ</div>
-            <div class="ascii-container" id="asciiContainer">
+            <div class="ascii-container">
                 <pre id="asciiOutput" class="ascii-art">██╗   ██╗███████╗██████╗ ███████╗██████╗ 
 ╚██╗ ██╔╝██╔════╝██╔══██╗██╔════╝██╔══██╗
  ╚████╔╝ █████╗  ██████╔╝█████╗  ██████╔╝
@@ -367,14 +350,14 @@
             </div>
 
             <div class="image-options">
-                <div class="row-2cols" style="margin-bottom:8px">
+                <div class="row-2cols">
                     <div>
                         <div class="control-label">🎨 Màu nền</div>
-                        <input type="color" id="bgColor" value="#000000" style="width:100%">
+                        <input type="color" id="bgColor" value="#000000">
                     </div>
                     <div>
                         <div class="control-label">✏️ Màu chữ</div>
-                        <input type="color" id="textColor" value="#9ef0ff" style="width:100%">
+                        <input type="color" id="textColor" value="#9ef0ff">
                     </div>
                     <div>
                         <div class="control-label">📏 Cỡ chữ</div>
@@ -384,310 +367,233 @@
             </div>
 
             <div class="btn-group">
-                <button id="copyClipboardBtn">📋 Copy to Clipboard</button>
-                <button id="downloadTxtBtn" class="btn-success">📄 Txt</button>
+                <button id="copyBtn">📋 Copy</button>
+                <button id="downloadTxtBtn" class="btn-success">📄 TXT</button>
                 <button id="downloadPngBtn" class="btn-success">🖼️ PNG</button>
                 <button id="resetBtn" class="btn-warning">⟳ Reset</button>
             </div>
-            <div class="status" id="infoDownload">⬇️ Xuất file TXT hoặc ảnh PNG với tùy chỉnh màu sắc</div>
         </div>
     </div>
     <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Hỗ trợ độ sáng, tương phản, bão hòa, sepia, edge detection, threshold | Render-ready</footer>
 </div>
 
 <script>
-    (function() {
-        console.log("✅ Script loaded");
+    // Lấy elements
+    const fileInput = document.getElementById('imageUpload');
+    const preview = document.getElementById('preview');
+    const convertBtn = document.getElementById('convertBtn');
+    const asciiOutput = document.getElementById('asciiOutput');
+    const widthRange = document.getElementById('widthRange');
+    const widthVal = document.getElementById('widthVal');
+    const spaceDensity = document.getElementById('spaceDensity');
+    const spaceVal = document.getElementById('spaceVal');
+    const statusMsg = document.getElementById('statusMsg');
+    const downloadTxt = document.getElementById('downloadTxtBtn');
+    const downloadPng = document.getElementById('downloadPngBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const bgColor = document.getElementById('bgColor');
+    const textColor = document.getElementById('textColor');
+    const fontSize = document.getElementById('fontSize');
+    const paddingInput = document.getElementById('padding');
+
+    // Biến lưu trữ
+    let currentFile = null;
+    let currentAscii = '';
+
+    // Cập nhật hiển thị giá trị
+    widthRange.oninput = () => widthVal.innerText = widthRange.value;
+    spaceDensity.oninput = () => spaceVal.innerText = spaceDensity.value;
+
+    // Xử lý chọn ảnh
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        // DOM elements
-        const fileInput = document.getElementById('imageUpload');
-        const previewImg = document.getElementById('preview');
-        const convertBtn = document.getElementById('convertBtn');
-        const asciiOutput = document.getElementById('asciiOutput');
-        const widthRange = document.getElementById('widthRange');
-        const widthVal = document.getElementById('widthVal');
-        const brightness = document.getElementById('brightness');
-        const contrast = document.getElementById('contrast');
-        const saturation = document.getElementById('saturation');
-        const hue = document.getElementById('hue');
-        const grayscale = document.getElementById('grayscale');
-        const sepia = document.getElementById('sepia');
-        const invert = document.getElementById('invert');
-        const threshold = document.getElementById('threshold');
-        const sharpness = document.getElementById('sharpness');
-        const edge = document.getElementById('edge');
-        const gradient = document.getElementById('gradient');
-        const spaceDensity = document.getElementById('spaceDensity');
-        const spaceVal = document.getElementById('spaceVal');
-        const paddingInput = document.getElementById('padding');
-        const bgColor = document.getElementById('bgColor');
-        const textColor = document.getElementById('textColor');
-        const fontSize = document.getElementById('fontSize');
-        const statusMsg = document.getElementById('statusMsg');
-        const downloadTxt = document.getElementById('downloadTxtBtn');
-        const downloadPng = document.getElementById('downloadPngBtn');
-        const copyBtn = document.getElementById('copyClipboardBtn');
-        const resetBtn = document.getElementById('resetBtn');
-
-        let currentAscii = "";
-        let currentFile = null;
-
-        // Cập nhật giá trị hiển thị
-        widthRange.addEventListener('input', () => {
-            widthVal.innerText = widthRange.value;
-        });
-        spaceDensity.addEventListener('input', () => {
-            spaceVal.innerText = spaceDensity.value;
-        });
-
-        // Xử lý tải ảnh - QUAN TRỌNG
-        function handleImageFile(file) {
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                statusMsg.innerHTML = '❌ Vui lòng chọn file ảnh!';
-                return;
-            }
-            
-            currentFile = file;
-            console.log("File selected:", file.name, file.size, file.type);
-            statusMsg.innerHTML = '🔄 Đang đọc ảnh...';
-            
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                previewImg.src = ev.target.result;
-                console.log("Preview loaded");
-                statusMsg.innerHTML = '✅ Ảnh đã tải xong! Nhấn "Chuyển đổi ASCII"';
-            };
-            reader.onerror = (err) => {
-                console.error('FileReader error:', err);
-                statusMsg.innerHTML = '❌ Lỗi đọc file ảnh!';
-            };
-            reader.readAsDataURL(file);
+        if (!file.type.startsWith('image/')) {
+            statusMsg.innerText = '❌ Vui lòng chọn file ảnh!';
+            return;
         }
+        
+        currentFile = file;
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            preview.src = ev.target.result;
+            statusMsg.innerText = '✅ Ảnh đã tải! Nhấn "Chuyển đổi ASCII"';
+        };
+        reader.readAsDataURL(file);
+    };
 
-        fileInput.addEventListener('change', (e) => {
-            console.log("File input changed");
-            const file = e.target.files[0];
-            if (file) {
-                handleImageFile(file);
-            }
-        });
-
-        // Gửi request chuyển đổi
-        async function performConversion() {
-            if (!currentFile) {
-                statusMsg.innerHTML = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
-                return;
-            }
-            
-            statusMsg.innerHTML = '🔄 Đang xử lý ảnh với các hiệu ứng...';
-            convertBtn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('image', currentFile);
-            formData.append('width', widthRange.value);
-            formData.append('brightness', brightness.value);
-            formData.append('contrast', contrast.value);
-            formData.append('saturation', saturation.value);
-            formData.append('hue', hue.value);
-            formData.append('grayscale', grayscale.value);
-            formData.append('sepia', sepia.value);
-            formData.append('invert', invert.value);
-            formData.append('threshold', threshold.value);
-            formData.append('sharpness', sharpness.value);
-            formData.append('edge_detection', edge.value);
-            formData.append('gradient', gradient.value);
-            formData.append('space_density', spaceDensity.value);
-
-            try {
-                console.log("Sending request to /convert");
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                console.log("Response:", result);
-                
-                if (result.success) {
-                    asciiOutput.innerText = result.ascii;
-                    currentAscii = result.ascii;
-                    statusMsg.innerHTML = `✅ Thành công! (${result.width}x${result.height})`;
-                } else {
-                    throw new Error(result.error || 'Lỗi không xác định');
-                }
-            } catch (err) {
-                console.error('Conversion error:', err);
-                statusMsg.innerHTML = '❌ Lỗi: ' + err.message;
-                asciiOutput.innerText = '[ Lỗi xử lý ảnh ]\nVui lòng thử lại với ảnh khác.';
-                currentAscii = '';
-            } finally {
-                convertBtn.disabled = false;
-            }
+    // Chuyển đổi ASCII
+    convertBtn.onclick = async () => {
+        if (!currentFile) {
+            statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
+            return;
         }
-
-        convertBtn.addEventListener('click', performConversion);
-
-        // Tải TXT
-        downloadTxt.addEventListener('click', async () => {
-            if (!currentAscii) {
-                statusMsg.innerHTML = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
-                return;
-            }
-            
-            statusMsg.innerHTML = '📄 Đang tạo file txt...';
-            
-            try {
-                const res = await fetch('/download/txt', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ascii: currentAscii })
-                });
-                
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ascii_${Date.now()}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                statusMsg.innerHTML = '📄 Đã tải file TXT';
-            } catch(e) {
-                console.error(e);
-                statusMsg.innerHTML = '❌ Lỗi tải TXT';
-            }
-        });
-
-        // Tải PNG
-        downloadPng.addEventListener('click', async () => {
-            if (!currentAscii) {
-                statusMsg.innerHTML = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
-                return;
-            }
-            
-            statusMsg.innerHTML = '🖼️ Đang tạo ảnh PNG...';
-            
-            try {
-                const res = await fetch('/download/image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ascii: currentAscii,
-                        format: 'png',
-                        font_size: parseInt(fontSize.value),
-                        bg_color: bgColor.value,
-                        text_color: textColor.value,
-                        padding: parseInt(paddingInput.value)
-                    })
-                });
-                
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ascii_image_${Date.now()}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                statusMsg.innerHTML = '🖼️ Đã tải ảnh PNG';
-            } catch(e) {
-                console.error(e);
-                statusMsg.innerHTML = '❌ Lỗi tạo ảnh';
-            }
-        });
-
-        // Copy clipboard
-        copyBtn.addEventListener('click', async () => {
-            if (!currentAscii) {
-                statusMsg.innerHTML = '⚠️ Không có ASCII để sao chép';
-                return;
-            }
-            
-            try {
-                await navigator.clipboard.writeText(currentAscii);
-                statusMsg.innerHTML = '📋 Đã sao chép ASCII!';
-                setTimeout(() => {
-                    if (currentAscii) statusMsg.innerHTML = '✅ Sẵn sàng';
-                }, 1500);
-            } catch(e) {
-                const ta = document.createElement('textarea');
-                ta.value = currentAscii;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                statusMsg.innerHTML = '📋 Copy fallback thành công';
-            }
-        });
-
-        // Reset
-        resetBtn.addEventListener('click', () => {
-            widthRange.value = '100'; widthVal.innerText = '100';
-            brightness.value = '100';
-            contrast.value = '100';
-            saturation.value = '100';
-            hue.value = '0';
-            grayscale.value = '0';
-            sepia.value = '0';
-            invert.value = '0';
-            threshold.value = '128';
-            sharpness.value = '9';
-            edge.value = '1';
-            gradient.value = 'normal';
-            spaceDensity.value = '1'; spaceVal.innerText = '1';
-            paddingInput.value = '20';
-            bgColor.value = '#000000';
-            textColor.value = '#9ef0ff';
-            fontSize.value = '14';
-            statusMsg.innerHTML = '🔄 Đã reset về mặc định.';
-            if (currentFile) performConversion();
-        });
-
-        // Kéo thả ảnh
-        const zone = document.getElementById('uploadZone');
         
-        zone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            zone.style.background = '#1f2c48';
-        });
+        statusMsg.innerText = '🔄 Đang xử lý...';
+        convertBtn.disabled = true;
         
-        zone.addEventListener('dragleave', () => {
-            zone.style.background = '#0a0f1e60';
-        });
+        const formData = new FormData();
+        formData.append('image', currentFile);
+        formData.append('width', widthRange.value);
+        formData.append('brightness', document.getElementById('brightness').value);
+        formData.append('contrast', document.getElementById('contrast').value);
+        formData.append('saturation', document.getElementById('saturation').value);
+        formData.append('hue', document.getElementById('hue').value);
+        formData.append('grayscale', document.getElementById('grayscale').value);
+        formData.append('sepia', document.getElementById('sepia').value);
+        formData.append('invert', document.getElementById('invert').value);
+        formData.append('threshold', document.getElementById('threshold').value);
+        formData.append('sharpness', document.getElementById('sharpness').value);
+        formData.append('edge_detection', document.getElementById('edge').value);
+        formData.append('gradient', document.getElementById('gradient').value);
+        formData.append('space_density', spaceDensity.value);
         
-        zone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            zone.style.background = '#0a0f1e60';
+        try {
+            const res = await fetch('/convert', { method: 'POST', body: formData });
+            const data = await res.json();
             
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                handleImageFile(file);
+            if (data.success) {
+                asciiOutput.innerText = data.ascii;
+                currentAscii = data.ascii;
+                statusMsg.innerText = `✅ Thành công! (${data.width}x${data.height})`;
             } else {
-                statusMsg.innerHTML = '❌ Chỉ chấp nhận file ảnh';
+                throw new Error(data.error);
             }
-        });
-        
-        zone.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        // Test kết nối server
-        async function testServer() {
-            try {
-                const res = await fetch('/health');
-                const data = await res.json();
-                console.log("Server health:", data);
-            } catch(e) {
-                console.error("Cannot connect to server:", e);
-                statusMsg.innerHTML = '⚠️ Không kết nối được server!';
-            }
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi: ' + err.message;
+            asciiOutput.innerText = '[ Lỗi xử lý ảnh ]';
+        } finally {
+            convertBtn.disabled = false;
         }
-        testServer();
-    })();
+    };
+
+    // Tải TXT
+    downloadTxt.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+            return;
+        }
+        
+        try {
+            const res = await fetch('/download/txt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ascii: currentAscii })
+            });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ascii_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            statusMsg.innerText = '📄 Đã tải TXT';
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi tải TXT';
+        }
+    };
+
+    // Tải PNG
+    downloadPng.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+            return;
+        }
+        
+        try {
+            const res = await fetch('/download/image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ascii: currentAscii,
+                    format: 'png',
+                    font_size: parseInt(fontSize.value),
+                    bg_color: bgColor.value,
+                    text_color: textColor.value,
+                    padding: parseInt(paddingInput.value)
+                })
+            });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ascii_${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+            statusMsg.innerText = '🖼️ Đã tải PNG';
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi tải PNG';
+        }
+    };
+
+    // Copy
+    copyBtn.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '⚠️ Không có ASCII để copy';
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(currentAscii);
+            statusMsg.innerText = '📋 Đã copy!';
+            setTimeout(() => statusMsg.innerText = '✅ Sẵn sàng', 1500);
+        } catch (err) {
+            const ta = document.createElement('textarea');
+            ta.value = currentAscii;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            statusMsg.innerText = '📋 Copy thành công';
+        }
+    };
+
+    // Reset
+    resetBtn.onclick = () => {
+        document.getElementById('widthRange').value = '100';
+        widthVal.innerText = '100';
+        document.getElementById('brightness').value = '100';
+        document.getElementById('contrast').value = '100';
+        document.getElementById('saturation').value = '100';
+        document.getElementById('hue').value = '0';
+        document.getElementById('grayscale').value = '0';
+        document.getElementById('sepia').value = '0';
+        document.getElementById('invert').value = '0';
+        document.getElementById('threshold').value = '128';
+        document.getElementById('sharpness').value = '9';
+        document.getElementById('edge').value = '1';
+        document.getElementById('gradient').value = 'normal';
+        spaceDensity.value = '1';
+        spaceVal.innerText = '1';
+        paddingInput.value = '20';
+        bgColor.value = '#000000';
+        textColor.value = '#9ef0ff';
+        fontSize.value = '14';
+        statusMsg.innerText = '🔄 Đã reset';
+        if (currentFile) convertBtn.click();
+    };
+
+    // Kéo thả
+    const zone = document.getElementById('uploadZone');
+    zone.ondragover = (e) => { e.preventDefault(); zone.style.background = '#1f2c48'; };
+    zone.ondragleave = () => { zone.style.background = '#0a0f1e60'; };
+    zone.ondrop = (e) => {
+        e.preventDefault();
+        zone.style.background = '#0a0f1e60';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => { preview.src = ev.target.result; statusMsg.innerText = '📸 Kéo thả thành công!'; };
+            reader.readAsDataURL(file);
+        } else {
+            statusMsg.innerText = '❌ Chỉ chấp nhận file ảnh';
+        }
+    };
+    zone.onclick = () => fileInput.click();
 </script>
 </body>
 </html>
