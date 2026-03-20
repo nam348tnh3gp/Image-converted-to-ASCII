@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter, ImageOps
 import io
 import base64
 import numpy as np
@@ -8,13 +8,14 @@ import tempfile
 import sys
 from datetime import datetime
 import warnings
+import imghdr
 
 warnings.filterwarnings('ignore')
 
 print(f"🐍 Python version: {sys.version}")
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
+    from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter, ImageOps
     print(f"✅ Pillow imported successfully")
 except ImportError as e:
     print(f"❌ Error importing Pillow: {e}")
@@ -33,8 +34,28 @@ except ImportError as e:
             return min(max(data, min_val), max_val)
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Danh sách các định dạng ảnh được hỗ trợ
+SUPPORTED_FORMATS = {
+    'jpg': 'JPEG',
+    'jpeg': 'JPEG',
+    'png': 'PNG',
+    'gif': 'GIF',
+    'bmp': 'BMP',
+    'webp': 'WEBP',
+    'tiff': 'TIFF',
+    'tif': 'TIFF',
+    'ico': 'ICO',
+    'svg': 'SVG',
+    'ppm': 'PPM',
+    'pgm': 'PGM',
+    'pbm': 'PBM',
+    'xbm': 'XBM',
+    'pcx': 'PCX',
+    'tga': 'TGA'
+}
 
 # Bảng ký tự ASCII với các gradient khác nhau
 ASCII_GRADIENTS = {
@@ -49,6 +70,48 @@ ASCII_GRADIENTS = {
     'dark': "*#%@@@",
 }
 
+def validate_image_format(image_bytes):
+    """
+    Kiểm tra và xác định định dạng ảnh
+    """
+    try:
+        # Sử dụng imghdr để kiểm tra
+        img_type = imghdr.what(None, image_bytes)
+        if img_type:
+            return img_type
+        
+        # Thử mở bằng PIL để xác định
+        img = Image.open(io.BytesIO(image_bytes))
+        return img.format.lower() if img.format else 'unknown'
+    except:
+        return 'unknown'
+
+def convert_to_rgb(img):
+    """
+    Chuyển đổi ảnh sang RGB, xử lý các định dạng đặc biệt
+    """
+    try:
+        if img.mode == 'RGBA':
+            # Tạo nền trắng cho ảnh trong suốt
+            rgb_img = Image.new('RGB', img.size, (0, 0, 0))
+            rgb_img.paste(img, mask=img.split()[3] if len(img.split()) > 3 else None)
+            return rgb_img
+        elif img.mode == 'P':
+            return img.convert('RGB')
+        elif img.mode == 'L':
+            return img.convert('RGB')
+        elif img.mode == '1':
+            return img.convert('RGB')
+        elif img.mode == 'CMYK':
+            return img.convert('RGB')
+        elif img.mode == 'YCbCr':
+            return img.convert('RGB')
+        else:
+            return img.convert('RGB')
+    except Exception as e:
+        print(f"Error converting to RGB: {e}")
+        return img.convert('RGB')
+
 def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0, 
                   sharpness=1.0, grayscale=0, sepia=0, invert=0,
                   threshold=128, edge_detection=0):
@@ -57,8 +120,7 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
     """
     try:
         # Chuyển sang RGB nếu cần
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
+        img = convert_to_rgb(img)
         
         # Điều chỉnh độ sáng
         if brightness != 1.0:
@@ -84,7 +146,6 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
         if grayscale > 0:
             gray_img = img.convert('L')
             if grayscale < 1.0:
-                # Pha trộn giữa ảnh màu và grayscale
                 color_img = img
                 img = Image.blend(color_img, gray_img.convert('RGB'), grayscale)
             else:
@@ -109,7 +170,7 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
         
         # Đảo màu
         if invert > 0:
-            invert_img = Image.eval(img.convert('RGB'), lambda x: 255 - x)
+            invert_img = ImageOps.invert(img)
             if invert < 1.0:
                 img = Image.blend(img, invert_img, invert)
             else:
@@ -119,8 +180,7 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
         if threshold < 255:
             gray = img.convert('L')
             threshold_img = gray.point(lambda p: 255 if p > threshold else 0)
-            if threshold > 0:
-                img = threshold_img.convert('RGB')
+            img = threshold_img.convert('RGB')
         
         # Edge Detection (phát hiện cạnh)
         if edge_detection > 0:
@@ -148,6 +208,10 @@ def image_to_ascii_advanced(image_data, width, brightness=1.0, contrast=1.0,
             img = Image.open(io.BytesIO(image_data))
         else:
             img = image_data
+        
+        # Xử lý ảnh GIF động (lấy frame đầu tiên)
+        if getattr(img, 'is_animated', False):
+            img.seek(0)
         
         # Áp dụng các hiệu ứng
         img = enhance_image(img, brightness, contrast, saturation, 
@@ -180,7 +244,6 @@ def image_to_ascii_advanced(image_data, width, brightness=1.0, contrast=1.0,
         
         # Điều chỉnh space density
         if space_density != 1:
-            # Làm mờ ảnh để tăng độ dày ký tự
             pixels = np.clip(pixels * space_density, 0, 255)
         
         # Tạo chuỗi ký tự
@@ -240,6 +303,13 @@ def convert():
         if file.filename == '':
             return jsonify({'error': 'Chưa chọn file'}), 400
         
+        # Kiểm tra định dạng file
+        filename = file.filename.lower()
+        ext = filename.split('.')[-1] if '.' in filename else ''
+        
+        if ext not in SUPPORTED_FORMATS:
+            return jsonify({'error': f'Định dạng ảnh không được hỗ trợ: {ext}. Hỗ trợ: JPG, PNG, GIF, BMP, WEBP, TIFF, ICO, SVG, PPM, PGM, PBM, XBM, PCX, TGA'}), 400
+        
         # Đọc tất cả tham số
         width = int(request.form.get('width', 100))
         brightness = float(request.form.get('brightness', 100)) / 100
@@ -257,9 +327,64 @@ def convert():
         
         # Đọc ảnh
         img_bytes = file.read()
-        img = Image.open(io.BytesIO(img_bytes))
+        
+        # Kiểm tra file rỗng
+        if len(img_bytes) == 0:
+            return jsonify({'error': 'File ảnh rỗng'}), 400
+        
+        # Mở ảnh với xử lý lỗi
+        try:
+            img = Image.open(io.BytesIO(img_bytes))
+        except Exception as e:
+            return jsonify({'error': f'Không thể mở file ảnh: {str(e)}'}), 400
         
         # Chuyển đổi
+        ascii_art = image_to_ascii_advanced(
+            img, width, brightness, contrast, saturation, hue,
+            grayscale, sepia, invert, threshold, sharpness,
+            edge_detection, gradient, space_density
+        )
+        
+        return jsonify({
+            'success': True,
+            'ascii': ascii_art,
+            'width': width,
+            'height': len(ascii_art.split('\n')),
+            'format': ext
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/convert/base64', methods=['POST'])
+def convert_base64():
+    """API chuyển đổi ảnh base64 sang ASCII"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'image' not in data:
+            return jsonify({'error': 'Thiếu dữ liệu ảnh'}), 400
+        
+        # Giải mã base64
+        img_data = base64.b64decode(data['image'].split(',')[1] if ',' in data['image'] else data['image'])
+        
+        # Đọc tham số
+        width = int(data.get('width', 100))
+        brightness = float(data.get('brightness', 100)) / 100
+        contrast = float(data.get('contrast', 100)) / 100
+        saturation = float(data.get('saturation', 100)) / 100
+        hue = float(data.get('hue', 0))
+        grayscale = float(data.get('grayscale', 0)) / 100
+        sepia = float(data.get('sepia', 0)) / 100
+        invert = float(data.get('invert', 0)) / 100
+        threshold = int(data.get('threshold', 128))
+        sharpness = float(data.get('sharpness', 9)) / 10
+        edge_detection = float(data.get('edge_detection', 1)) / 10
+        gradient = data.get('gradient', 'normal')
+        space_density = int(data.get('space_density', 1))
+        
+        # Chuyển đổi
+        img = Image.open(io.BytesIO(img_data))
         ascii_art = image_to_ascii_advanced(
             img, width, brightness, contrast, saturation, hue,
             grayscale, sepia, invert, threshold, sharpness,
@@ -390,7 +515,7 @@ def download_html():
 
 @app.route('/download/image', methods=['POST'])
 def download_image():
-    """Tải xuống ảnh"""
+    """Tải xuống ảnh (PNG, JPG, BMP, GIF)"""
     try:
         data = request.get_json()
         ascii_art = data.get('ascii', '')
@@ -401,7 +526,29 @@ def download_image():
         padding = int(data.get('padding', 20))
         
         lines = ascii_art.split('\n')
-        font = ImageFont.load_default()
+        
+        # Tìm font monospace
+        font = None
+        font_paths = [
+            '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
+            '/System/Library/Fonts/Monaco.dfont',
+            'C:\\Windows\\Fonts\\consola.ttf',
+            None
+        ]
+        
+        for font_path in font_paths:
+            try:
+                if font_path:
+                    font = ImageFont.truetype(font_path, font_size)
+                else:
+                    font = ImageFont.load_default()
+                break
+            except:
+                continue
+        
+        if font is None:
+            font = ImageFont.load_default()
         
         char_width = font_size * 0.6
         char_height = font_size * 1.2
@@ -423,8 +570,10 @@ def download_image():
         format_map = {
             'png': ('PNG', 'image/png'),
             'jpg': ('JPEG', 'image/jpeg'),
+            'jpeg': ('JPEG', 'image/jpeg'),
             'bmp': ('BMP', 'image/bmp'),
-            'gif': ('GIF', 'image/gif')
+            'gif': ('GIF', 'image/gif'),
+            'webp': ('WEBP', 'image/webp')
         }
         
         pil_format, mime_type = format_map.get(format_type, ('PNG', 'image/png'))
@@ -432,9 +581,9 @@ def download_image():
         if format_type in ['jpg', 'jpeg']:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            img.save(img_buffer, format=pil_format, quality=95)
+            img.save(img_buffer, format=pil_format, quality=95, optimize=True)
         else:
-            img.save(img_buffer, format=pil_format)
+            img.save(img_buffer, format=pil_format, optimize=True)
         
         img_buffer.seek(0)
         filename = f"ascii_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{format_type}"
@@ -444,9 +593,21 @@ def download_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/supported-formats')
+def supported_formats():
+    """Trả về danh sách các định dạng ảnh được hỗ trợ"""
+    return jsonify({
+        'formats': list(SUPPORTED_FORMATS.keys()),
+        'count': len(SUPPORTED_FORMATS)
+    })
+
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()}), 200
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'supported_formats': list(SUPPORTED_FORMATS.keys())
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
