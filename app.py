@@ -8,7 +8,6 @@ import tempfile
 import sys
 from datetime import datetime
 import warnings
-import imghdr
 
 warnings.filterwarnings('ignore')
 
@@ -48,7 +47,6 @@ SUPPORTED_FORMATS = {
     'tiff': 'TIFF',
     'tif': 'TIFF',
     'ico': 'ICO',
-    'svg': 'SVG',
     'ppm': 'PPM',
     'pgm': 'PGM',
     'pbm': 'PBM',
@@ -72,18 +70,15 @@ ASCII_GRADIENTS = {
 
 def validate_image_format(image_bytes):
     """
-    Kiểm tra và xác định định dạng ảnh
+    Kiểm tra và xác định định dạng ảnh bằng Pillow (không dùng imghdr)
     """
     try:
-        # Sử dụng imghdr để kiểm tra
-        img_type = imghdr.what(None, image_bytes)
-        if img_type:
-            return img_type
-        
         # Thử mở bằng PIL để xác định
         img = Image.open(io.BytesIO(image_bytes))
-        return img.format.lower() if img.format else 'unknown'
-    except:
+        format_type = img.format.lower() if img.format else 'unknown'
+        return format_type
+    except Exception as e:
+        print(f"Error validating image: {e}")
         return 'unknown'
 
 def convert_to_rgb(img):
@@ -92,7 +87,7 @@ def convert_to_rgb(img):
     """
     try:
         if img.mode == 'RGBA':
-            # Tạo nền trắng cho ảnh trong suốt
+            # Tạo nền đen cho ảnh trong suốt
             rgb_img = Image.new('RGB', img.size, (0, 0, 0))
             rgb_img.paste(img, mask=img.split()[3] if len(img.split()) > 3 else None)
             return rgb_img
@@ -308,7 +303,7 @@ def convert():
         ext = filename.split('.')[-1] if '.' in filename else ''
         
         if ext not in SUPPORTED_FORMATS:
-            return jsonify({'error': f'Định dạng ảnh không được hỗ trợ: {ext}. Hỗ trợ: JPG, PNG, GIF, BMP, WEBP, TIFF, ICO, SVG, PPM, PGM, PBM, XBM, PCX, TGA'}), 400
+            return jsonify({'error': f'Định dạng ảnh không được hỗ trợ: {ext}. Hỗ trợ: JPG, PNG, GIF, BMP, WEBP, TIFF, ICO, PPM, PGM, PBM, XBM, PCX, TGA'}), 400
         
         # Đọc tất cả tham số
         width = int(request.form.get('width', 100))
