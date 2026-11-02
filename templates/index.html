@@ -1,1 +1,628 @@
-PLACEHOLDER_WILL_BE_REPLACED_BY_REAL_CONTENT_IN_NEXT_STEP
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4257712618696739" crossorigin="anonymous"></script>
+    <title>ASCII Art Studio Pro - Chuyển ảnh sang ký tự nghệ thuật</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Fira Code', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+            color: #e3e6f0;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(18, 25, 45, 0.85);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(80, 140, 210, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin: 0 0 0.3rem;
+            background: linear-gradient(135deg, #c0e0ff, #80b5ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .sub {
+            text-align: center;
+            opacity: 0.7;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .main-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .controls-panel, .output-panel {
+            background: #0f172ae0;
+            border-radius: 1.2rem;
+            padding: 1.2rem;
+            border: 1px solid #2d3a5e;
+        }
+
+        .controls-panel {
+            flex: 1.2;
+            min-width: 320px;
+        }
+
+        .output-panel {
+            flex: 2;
+            min-width: 400px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 1rem 0 0.8rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid #3b82f6;
+            color: #80b5ff;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            color: #b0c4ff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: #1e2a3a;
+            height: 4px;
+            border-radius: 5px;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+
+        select, input[type="number"] {
+            background: #1e2a3a;
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+
+        .row-2cols {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .row-2cols > div {
+            flex: 1;
+        }
+
+        .upload-area {
+            border: 2px dashed #3b82f6;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #0a0f1e60;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            background: #1e2a44;
+            border-color: #60a5fa;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            display: block;
+            margin: 0.5rem auto;
+            border-radius: 8px;
+            background: #010101;
+        }
+
+        .ascii-container {
+            background: #03060c;
+            padding: 1rem;
+            border-radius: 0.8rem;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #9ef0ff;
+            max-height: 450px;
+            border: 1px solid #2d3e6e;
+        }
+
+        .ascii-art {
+            margin: 0;
+            white-space: pre;
+        }
+
+        button {
+            background: #2563eb;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #3b82f6;
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+        }
+
+        .status {
+            font-size: 0.75rem;
+            margin-top: 0.6rem;
+            text-align: center;
+            color: #86b3ff;
+        }
+
+        .image-options {
+            background: #0b1120;
+            border-radius: 0.8rem;
+            padding: 0.8rem;
+            margin-top: 0.8rem;
+        }
+
+        @media (max-width: 900px) {
+            .ascii-container { font-size: 7px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>◢ ASCII ART STUDIO PRO ◣</h1>
+    <div class="sub">⚡ Ảnh → Ký tự nghệ thuật | Tùy chỉnh chuyên sâu | Xuất TXT, PNG, HTML ⚡</div>
+
+    <div class="main-grid">
+        <!-- Panel trái -->
+        <div class="controls-panel">
+            <div class="upload-area" id="uploadZone">
+                📸 Nhấn / Kéo thả ảnh (JPG, PNG, GIF, WEBP...)
+                <input type="file" id="imageUpload" accept="image/*" style="display:none">
+            </div>
+            <img id="preview" class="preview-img" alt="Preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a2538'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%236b8cce' font-size='14'%3EChưa có ảnh%3C/text%3E%3C/svg%3E">
+
+            <div class="section-title">🎨 CHỈNH SỬA ẢNH</div>
+            
+            <div class="control-group">
+                <div class="control-label"><span>Characters (Độ rộng 40-400)</span><span id="widthVal">100</span></div>
+                <input type="range" id="widthRange" min="40" max="400" step="2" value="100">
+            </div>
+
+            <div class="row-2cols">
+                <div class="control-group">
+                    <div class="control-label">Brightness</div>
+                    <input type="range" id="brightness" min="0" max="200" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Contrast</div>
+                    <input type="range" id="contrast" min="0" max="200" value="100">
+                </div>
+            </div>
+
+            <div class="row-2cols">
+                <div class="control-group">
+                    <div class="control-label">Saturation</div>
+                    <input type="range" id="saturation" min="0" max="200" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Hue</div>
+                    <input type="range" id="hue" min="0" max="360" value="0">
+                </div>
+            </div>
+
+            <div class="row-2cols">
+                <div class="control-group">
+                    <div class="control-label">Grayscale %</div>
+                    <input type="range" id="grayscale" min="0" max="100" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Sepia %</div>
+                    <input type="range" id="sepia" min="0" max="100" value="0">
+                </div>
+            </div>
+
+            <div class="row-2cols">
+                <div class="control-group">
+                    <div class="control-label">Invert Colors %</div>
+                    <input type="range" id="invert" min="0" max="100" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Thresholding</div>
+                    <input type="range" id="threshold" min="0" max="255" value="128">
+                </div>
+            </div>
+
+            <div class="row-2cols">
+                <div class="control-group">
+                    <div class="control-label">Sharpness</div>
+                    <input type="range" id="sharpness" min="0" max="20" value="9">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Edge Detection</div>
+                    <input type="range" id="edge" min="0" max="10" value="1">
+                </div>
+            </div>
+
+            <div class="section-title">🔤 TÙY CHỈNH ASCII</div>
+            
+            <div class="control-group">
+                <div class="control-label">ASCII gradient</div>
+                <select id="gradient">
+                    <option value="normal">Normal ( .:-=+*#%@ )</option>
+                    <option value="detailed">Detailed (Nhiều cấp độ)</option>
+                    <option value="blocks">Blocks (█▓▒░)</option>
+                    <option value="simple">Simple ( .-+=*#%@@ )</option>
+                    <option value="retro">Retro (@%#*+=-:. )</option>
+                    <option value="inverted">Inverted (Đảo ngược)</option>
+                    <option value="contrast">Contrast (Tương phản cao)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Space Density (1-5)</div>
+                <input type="range" id="spaceDensity" min="1" max="5" step="1" value="1">
+                <span id="spaceVal">1</span>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Transparent frame (px)</div>
+                <input type="number" id="padding" min="0" max="100" value="20" step="2">
+            </div>
+
+            <button id="convertBtn">✨ CHUYỂN ĐỔI ASCII ✨</button>
+            <div class="status" id="statusMsg">📌 Sẵn sàng | Tải ảnh lên và nhấn chuyển đổi</div>
+        </div>
+
+        <!-- Panel phải -->
+        <div class="output-panel">
+            <div class="section-title">🖨️ ASCII ART KẾT QUẢ</div>
+            <div class="ascii-container">
+                <pre id="asciiOutput" class="ascii-art">██╗   ██╗███████╗██████╗ ███████╗██████╗ 
+╚██╗ ██╔╝██╔════╝██╔══██╗██╔════╝██╔══██╗
+ ╚████╔╝ █████╗  ██████╔╝█████╗  ██████╔╝
+  ╚██╔╝  ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗
+   ██║   ███████╗██║  ██║███████╗██║  ██║
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+[ Chờ ảnh và nhấn chuyển đổi ]</pre>
+            </div>
+
+            <div class="image-options">
+                <div class="row-2cols">
+                    <div>
+                        <div class="control-label">🎨 Màu nền</div>
+                        <input type="color" id="bgColor" value="#000000">
+                    </div>
+                    <div>
+                        <div class="control-label">✏️ Màu chữ</div>
+                        <input type="color" id="textColor" value="#9ef0ff">
+                    </div>
+                    <div>
+                        <div class="control-label">📏 Cỡ chữ</div>
+                        <input type="number" id="fontSize" min="8" max="48" value="14" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button id="copyBtn">📋 Copy</button>
+                <button id="downloadTxtBtn" class="btn-success">📄 TXT</button>
+                <button id="downloadHtmlBtn" class="btn-success">🌐 HTML</button>
+                <button id="downloadPngBtn" class="btn-success">🖼️ PNG</button>
+                <button id="resetBtn" class="btn-warning">⟳ Reset</button>
+            </div>
+        </div>
+    </div>
+    <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Hỗ trợ độ sáng, tương phản, bão hòa, hue, sepia, edge detection, threshold | Render-ready</footer>
+</div>
+
+<script>
+    // Lấy elements
+    const fileInput = document.getElementById('imageUpload');
+    const preview = document.getElementById('preview');
+    const convertBtn = document.getElementById('convertBtn');
+    const asciiOutput = document.getElementById('asciiOutput');
+    const widthRange = document.getElementById('widthRange');
+    const widthVal = document.getElementById('widthVal');
+    const spaceDensity = document.getElementById('spaceDensity');
+    const spaceVal = document.getElementById('spaceVal');
+    const statusMsg = document.getElementById('statusMsg');
+    const downloadTxt = document.getElementById('downloadTxtBtn');
+    const downloadPng = document.getElementById('downloadPngBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const bgColor = document.getElementById('bgColor');
+    const textColor = document.getElementById('textColor');
+    const fontSize = document.getElementById('fontSize');
+    const paddingInput = document.getElementById('padding');
+
+    // Biến lưu trữ
+    let currentFile = null;
+    let currentAscii = '';
+
+    // Cập nhật hiển thị giá trị
+    widthRange.oninput = () => widthVal.innerText = widthRange.value;
+    spaceDensity.oninput = () => spaceVal.innerText = spaceDensity.value;
+
+    // Xử lý chọn ảnh
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+            statusMsg.innerText = '❌ Vui lòng chọn file ảnh!';
+            return;
+        }
+        
+        currentFile = file;
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            preview.src = ev.target.result;
+            statusMsg.innerText = '✅ Ảnh đã tải! Nhấn "Chuyển đổi ASCII"';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Chuyển đổi ASCII
+    convertBtn.onclick = async () => {
+        if (!currentFile) {
+            statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
+            return;
+        }
+        
+        statusMsg.innerText = '🔄 Đang xử lý...';
+        convertBtn.disabled = true;
+        
+        const formData = new FormData();
+        formData.append('image', currentFile);
+        formData.append('width', widthRange.value);
+        formData.append('brightness', document.getElementById('brightness').value);
+        formData.append('contrast', document.getElementById('contrast').value);
+        formData.append('saturation', document.getElementById('saturation').value);
+        formData.append('hue', document.getElementById('hue').value);
+        formData.append('grayscale', document.getElementById('grayscale').value);
+        formData.append('sepia', document.getElementById('sepia').value);
+        formData.append('invert', document.getElementById('invert').value);
+        formData.append('threshold', document.getElementById('threshold').value);
+        formData.append('sharpness', document.getElementById('sharpness').value);
+        formData.append('edge_detection', document.getElementById('edge').value);
+        formData.append('gradient', document.getElementById('gradient').value);
+        formData.append('space_density', spaceDensity.value);
+        
+        try {
+            const res = await fetch('/convert', { method: 'POST', body: formData });
+            const data = await res.json();
+            
+            if (data.success) {
+                asciiOutput.innerText = data.ascii;
+                currentAscii = data.ascii;
+                statusMsg.innerText = `✅ Thành công! (${data.width}x${data.height})`;
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi: ' + err.message;
+            asciiOutput.innerText = '[ Lỗi xử lý ảnh ]';
+        } finally {
+            convertBtn.disabled = false;
+        }
+    };
+
+    // Tải TXT
+    downloadTxt.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+            return;
+        }
+        
+        try {
+            const res = await fetch('/download/txt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ascii: currentAscii })
+            });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ascii_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            statusMsg.innerText = '📄 Đã tải TXT';
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi tải TXT';
+        }
+    };
+
+    // Tải HTML
+    const downloadHtml = document.getElementById('downloadHtmlBtn');
+    if (downloadHtml) {
+        downloadHtml.onclick = async () => {
+            if (!currentAscii) {
+                statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+                return;
+            }
+            try {
+                const res = await fetch('/download/html', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ascii: currentAscii })
+                });
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ascii_${Date.now()}.html`;
+                a.click();
+                URL.revokeObjectURL(url);
+                statusMsg.innerText = '🌐 Đã tải HTML';
+            } catch (err) {
+                statusMsg.innerText = '❌ Lỗi tải HTML';
+            }
+        };
+    }
+
+    // Tải PNG
+    downloadPng.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
+            return;
+        }
+        
+        try {
+            const res = await fetch('/download/image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ascii: currentAscii,
+                    format: 'png',
+                    font_size: parseInt(fontSize.value),
+                    bg_color: bgColor.value,
+                    text_color: textColor.value,
+                    padding: parseInt(paddingInput.value)
+                })
+            });
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ascii_${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+            statusMsg.innerText = '🖼️ Đã tải PNG';
+        } catch (err) {
+            statusMsg.innerText = '❌ Lỗi tải PNG';
+        }
+    };
+
+    // Copy
+    copyBtn.onclick = async () => {
+        if (!currentAscii) {
+            statusMsg.innerText = '⚠️ Không có ASCII để copy';
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(currentAscii);
+            statusMsg.innerText = '📋 Đã copy!';
+            setTimeout(() => statusMsg.innerText = '✅ Sẵn sàng', 1500);
+        } catch (err) {
+            const ta = document.createElement('textarea');
+            ta.value = currentAscii;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            statusMsg.innerText = '📋 Copy thành công';
+        }
+    };
+
+    // Reset
+    resetBtn.onclick = () => {
+        document.getElementById('widthRange').value = '100';
+        widthVal.innerText = '100';
+        document.getElementById('brightness').value = '100';
+        document.getElementById('contrast').value = '100';
+        document.getElementById('saturation').value = '100';
+        document.getElementById('hue').value = '0';
+        document.getElementById('grayscale').value = '0';
+        document.getElementById('sepia').value = '0';
+        document.getElementById('invert').value = '0';
+        document.getElementById('threshold').value = '128';
+        document.getElementById('sharpness').value = '9';
+        document.getElementById('edge').value = '1';
+        document.getElementById('gradient').value = 'normal';
+        spaceDensity.value = '1';
+        spaceVal.innerText = '1';
+        paddingInput.value = '20';
+        bgColor.value = '#000000';
+        textColor.value = '#9ef0ff';
+        fontSize.value = '14';
+        statusMsg.innerText = '🔄 Đã reset';
+        if (currentFile) convertBtn.click();
+    };
+
+    // Kéo thả
+    const zone = document.getElementById('uploadZone');
+    zone.ondragover = (e) => { e.preventDefault(); zone.style.background = '#1f2c48'; };
+    zone.ondragleave = () => { zone.style.background = '#0a0f1e60'; };
+    zone.ondrop = (e) => {
+        e.preventDefault();
+        zone.style.background = '#0a0f1e60';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => { preview.src = ev.target.result; statusMsg.innerText = '📸 Kéo thả thành công!'; };
+            reader.readAsDataURL(file);
+        } else {
+            statusMsg.innerText = '❌ Chỉ chấp nhận file ảnh';
+        }
+    };
+    zone.onclick = () => fileInput.click();
+</script>
+</body>
+</html>
