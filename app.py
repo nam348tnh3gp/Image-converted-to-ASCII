@@ -28,7 +28,7 @@ SUPPORTED_FORMATS = {
 
 # Bảng ký tự ASCII với các gradient khác nhau
 ASCII_GRADIENTS = {
-    'normal': " .:-=+*#%@",
+    'normal': " .:-=+*#%$@",
     'detailed': " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
     'blocks': " ░▒▓█",
     'simple': " .-+=*#%@@",
@@ -68,7 +68,7 @@ def apply_hue_shift(img, hue_shift):
 
 def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0, 
                   sharpness=1.0, grayscale=0, sepia=0, invert=0,
-                  threshold=128, edge_detection=0, hue=0):
+                  threshold=255, edge_detection=0, hue=0):
     """Áp dụng các hiệu ứng chỉnh sửa ảnh"""
     try:
         img = convert_to_rgb(img)
@@ -106,15 +106,22 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
             invert_img = ImageOps.invert(img)
             img = Image.blend(img, invert_img, invert)
         
-        if threshold < 255:
+        # Threshold: chỉ bật khi < 250 (255 = tắt)
+        if threshold < 250:
             gray = img.convert('L')
             threshold_img = gray.point(lambda p: 255 if p > threshold else 0)
             img = threshold_img.convert('RGB')
         
+        # Edge detection: blend với ảnh gốc để không bị đen xì
         if edge_detection > 0:
             edge_img = img.convert('L').filter(ImageFilter.FIND_EDGES)
+            edge_img = edge_img.point(lambda p: min(255, int(p * (1.5 + edge_detection * 2))))
             if edge_detection < 1.0:
-                edge_img = edge_img.point(lambda p: int(p * edge_detection))
+                base = img.convert('L')
+                edge_arr = np.array(edge_img, dtype=np.float32)
+                base_arr = np.array(base, dtype=np.float32)
+                blended = np.clip(base_arr * (1 - edge_detection) + edge_arr * edge_detection, 0, 255)
+                edge_img = Image.fromarray(blended.astype(np.uint8))
             img = edge_img.convert('RGB')
         
         return img
@@ -124,7 +131,7 @@ def enhance_image(img, brightness=1.0, contrast=1.0, saturation=1.0,
 
 def image_to_ascii_advanced(image_data, width, brightness=1.0, contrast=1.0,
                             saturation=1.0, hue=0, grayscale=0, sepia=0,
-                            invert=0, threshold=128, sharpness=1.0,
+                            invert=0, threshold=255, sharpness=1.0,
                             edge_detection=0, gradient='normal', space_density=1.0):
     """Chuyển đổi ảnh thành ASCII art với nhiều tùy chọn nâng cao"""
     try:
@@ -212,9 +219,9 @@ def convert():
         grayscale = float(request.form.get('grayscale', 0)) / 100
         sepia = float(request.form.get('sepia', 0)) / 100
         invert = float(request.form.get('invert', 0)) / 100
-        threshold = int(request.form.get('threshold', 128))
-        sharpness = float(request.form.get('sharpness', 9)) / 10
-        edge_detection = float(request.form.get('edge_detection', 1)) / 10
+        threshold = int(request.form.get('threshold', 255))
+        sharpness = float(request.form.get('sharpness', 10)) / 10
+        edge_detection = float(request.form.get('edge_detection', 0)) / 10
         gradient = request.form.get('gradient', 'normal')
         space_density = float(request.form.get('space_density', 1))
         
@@ -256,9 +263,9 @@ def convert_base64():
         grayscale = float(data.get('grayscale', 0)) / 100
         sepia = float(data.get('sepia', 0)) / 100
         invert = float(data.get('invert', 0)) / 100
-        threshold = int(data.get('threshold', 128))
-        sharpness = float(data.get('sharpness', 9)) / 10
-        edge_detection = float(data.get('edge_detection', 1)) / 10
+        threshold = int(data.get('threshold', 255))
+        sharpness = float(data.get('sharpness', 10)) / 10
+        edge_detection = float(data.get('edge_detection', 0)) / 10
         gradient = data.get('gradient', 'normal')
         space_density = float(data.get('space_density', 1))
         
