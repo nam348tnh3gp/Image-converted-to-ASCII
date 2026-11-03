@@ -236,7 +236,6 @@
     <div class="sub">⚡ Ảnh → Ký tự nghệ thuật | Tùy chỉnh chuyên sâu | Xuất TXT, PNG, HTML ⚡</div>
 
     <div class="main-grid">
-        <!-- Panel trái -->
         <div class="controls-panel">
             <div class="upload-area" id="uploadZone">
                 📸 Nhấn / Kéo thả ảnh (JPG, PNG, GIF, WEBP...)
@@ -290,8 +289,8 @@
                     <input type="range" id="invert" min="0" max="100" value="0">
                 </div>
                 <div class="control-group">
-                    <div class="control-label">Thresholding</div>
-                    <input type="range" id="threshold" min="0" max="255" value="128">
+                    <div class="control-label">Thresholding <span style="opacity:.6">(255=tắt)</span></div>
+                    <input type="range" id="threshold" min="0" max="255" value="255">
                 </div>
             </div>
 
@@ -301,8 +300,8 @@
                     <input type="range" id="sharpness" min="0" max="20" value="9">
                 </div>
                 <div class="control-group">
-                    <div class="control-label">Edge Detection</div>
-                    <input type="range" id="edge" min="0" max="10" value="1">
+                    <div class="control-label">Edge Detection <span style="opacity:.6">(0=tắt)</span></div>
+                    <input type="range" id="edge" min="0" max="10" value="0">
                 </div>
             </div>
 
@@ -336,7 +335,6 @@
             <div class="status" id="statusMsg">📌 Sẵn sàng | Tải ảnh lên và nhấn chuyển đổi</div>
         </div>
 
-        <!-- Panel phải -->
         <div class="output-panel">
             <div class="section-title">🖨️ ASCII ART KẾT QUẢ</div>
             <div class="ascii-container">
@@ -375,11 +373,10 @@
             </div>
         </div>
     </div>
-    <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Hỗ trợ độ sáng, tương phản, bão hòa, hue, sepia, edge detection, threshold | Render-ready</footer>
+    <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Threshold 255 = tắt · Edge 0 = tắt | Render-ready</footer>
 </div>
 
 <script>
-    // Lấy elements
     const fileInput = document.getElementById('imageUpload');
     const preview = document.getElementById('preview');
     const convertBtn = document.getElementById('convertBtn');
@@ -398,26 +395,20 @@
     const fontSize = document.getElementById('fontSize');
     const paddingInput = document.getElementById('padding');
 
-    // Biến lưu trữ
     let currentFile = null;
     let currentAscii = '';
 
-    // Cập nhật hiển thị giá trị
     widthRange.oninput = () => widthVal.innerText = widthRange.value;
     spaceDensity.oninput = () => spaceVal.innerText = spaceDensity.value;
 
-    // Xử lý chọn ảnh
     fileInput.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
         if (!file.type.startsWith('image/')) {
             statusMsg.innerText = '❌ Vui lòng chọn file ảnh!';
             return;
         }
-        
         currentFile = file;
-        
         const reader = new FileReader();
         reader.onload = (ev) => {
             preview.src = ev.target.result;
@@ -426,16 +417,13 @@
         reader.readAsDataURL(file);
     };
 
-    // Chuyển đổi ASCII
     convertBtn.onclick = async () => {
         if (!currentFile) {
             statusMsg.innerText = '⚠️ Chưa có ảnh! Hãy tải ảnh lên.';
             return;
         }
-        
         statusMsg.innerText = '🔄 Đang xử lý...';
         convertBtn.disabled = true;
-        
         const formData = new FormData();
         formData.append('image', currentFile);
         formData.append('width', widthRange.value);
@@ -451,11 +439,9 @@
         formData.append('edge_detection', document.getElementById('edge').value);
         formData.append('gradient', document.getElementById('gradient').value);
         formData.append('space_density', spaceDensity.value);
-        
         try {
             const res = await fetch('/convert', { method: 'POST', body: formData });
             const data = await res.json();
-            
             if (data.success) {
                 asciiOutput.innerText = data.ascii;
                 currentAscii = data.ascii;
@@ -471,13 +457,11 @@
         }
     };
 
-    // Tải TXT
     downloadTxt.onclick = async () => {
         if (!currentAscii) {
             statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
             return;
         }
-        
         try {
             const res = await fetch('/download/txt', {
                 method: 'POST',
@@ -497,7 +481,6 @@
         }
     };
 
-    // Tải HTML
     const downloadHtml = document.getElementById('downloadHtmlBtn');
     if (downloadHtml) {
         downloadHtml.onclick = async () => {
@@ -525,13 +508,11 @@
         };
     }
 
-    // Tải PNG
     downloadPng.onclick = async () => {
         if (!currentAscii) {
             statusMsg.innerText = '❌ Chưa có ASCII! Hãy chuyển đổi trước.';
             return;
         }
-        
         try {
             const res = await fetch('/download/image', {
                 method: 'POST',
@@ -558,13 +539,11 @@
         }
     };
 
-    // Copy
     copyBtn.onclick = async () => {
         if (!currentAscii) {
             statusMsg.innerText = '⚠️ Không có ASCII để copy';
             return;
         }
-        
         try {
             await navigator.clipboard.writeText(currentAscii);
             statusMsg.innerText = '📋 Đã copy!';
@@ -580,7 +559,6 @@
         }
     };
 
-    // Reset
     resetBtn.onclick = () => {
         document.getElementById('widthRange').value = '100';
         widthVal.innerText = '100';
@@ -591,9 +569,9 @@
         document.getElementById('grayscale').value = '0';
         document.getElementById('sepia').value = '0';
         document.getElementById('invert').value = '0';
-        document.getElementById('threshold').value = '128';
+        document.getElementById('threshold').value = '255';
         document.getElementById('sharpness').value = '9';
-        document.getElementById('edge').value = '1';
+        document.getElementById('edge').value = '0';
         document.getElementById('gradient').value = 'normal';
         spaceDensity.value = '1';
         spaceVal.innerText = '1';
@@ -605,7 +583,6 @@
         if (currentFile) convertBtn.click();
     };
 
-    // Kéo thả
     const zone = document.getElementById('uploadZone');
     zone.ondragover = (e) => { e.preventDefault(); zone.style.background = '#1f2c48'; };
     zone.ondragleave = () => { zone.style.background = '#0a0f1e60'; };
