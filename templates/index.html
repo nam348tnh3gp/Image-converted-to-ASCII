@@ -6,10 +6,7 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4257712618696739" crossorigin="anonymous"></script>
     <title>ASCII Art Studio Pro - Chuyển ảnh sang ký tự nghệ thuật</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', 'Fira Code', 'Courier New', monospace;
             background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
@@ -18,7 +15,6 @@
             padding: 1rem;
             min-height: 100vh;
         }
-
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -28,7 +24,6 @@
             box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(80, 140, 210, 0.3);
         }
-
         h1 {
             text-align: center;
             font-size: 2rem;
@@ -38,37 +33,16 @@
             background-clip: text;
             color: transparent;
         }
-
-        .sub {
-            text-align: center;
-            opacity: 0.7;
-            margin-bottom: 1.5rem;
-            font-size: 0.85rem;
-        }
-
-        .main-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-        }
-
+        .sub { text-align: center; opacity: 0.7; margin-bottom: 1.5rem; font-size: 0.85rem; }
+        .main-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; }
         .controls-panel, .output-panel {
             background: #0f172ae0;
             border-radius: 1.2rem;
             padding: 1.2rem;
             border: 1px solid #2d3a5e;
         }
-
-        .controls-panel {
-            flex: 1.2;
-            min-width: 320px;
-        }
-
-        .output-panel {
-            flex: 2;
-            min-width: 400px;
-        }
-
+        .controls-panel { flex: 1.2; min-width: 320px; }
+        .output-panel { flex: 2; min-width: 400px; }
         .section-title {
             font-size: 0.9rem;
             font-weight: bold;
@@ -77,15 +51,8 @@
             border-bottom: 1px solid #3b82f6;
             color: #80b5ff;
         }
-
-        .section-title:first-of-type {
-            margin-top: 0;
-        }
-
-        .control-group {
-            margin-bottom: 1rem;
-        }
-
+        .section-title:first-of-type { margin-top: 0; }
+        .control-group { margin-bottom: 1rem; }
         .control-label {
             display: flex;
             justify-content: space-between;
@@ -93,7 +60,6 @@
             margin-bottom: 0.3rem;
             color: #b0c4ff;
         }
-
         input[type="range"] {
             width: 100%;
             background: #1e2a3a;
@@ -101,7 +67,6 @@
             border-radius: 5px;
             -webkit-appearance: none;
         }
-
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
@@ -110,7 +75,6 @@
             background: #3b82f6;
             cursor: pointer;
         }
-
         select, input[type="number"] {
             background: #1e2a3a;
             border: 1px solid #3b82f6;
@@ -119,16 +83,8 @@
             border-radius: 0.5rem;
             width: 100%;
         }
-
-        .row-2cols {
-            display: flex;
-            gap: 0.8rem;
-        }
-
-        .row-2cols > div {
-            flex: 1;
-        }
-
+        .row-2cols { display: flex; gap: 0.8rem; }
+        .row-2cols > div { flex: 1; }
         .upload-area {
             border: 2px dashed #3b82f6;
             border-radius: 1rem;
@@ -139,12 +95,7 @@
             background: #0a0f1e60;
             margin-bottom: 1rem;
         }
-
-        .upload-area:hover {
-            background: #1e2a44;
-            border-color: #60a5fa;
-        }
-
+        .upload-area:hover { background: #1e2a44; border-color: #60a5fa; }
         .preview-img {
             max-width: 100%;
             max-height: 200px;
@@ -154,26 +105,21 @@
             border-radius: 8px;
             background: #010101;
         }
-
         .ascii-container {
             background: #03060c;
             padding: 1rem;
             border-radius: 0.8rem;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
+            overflow: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
             line-height: 1.2;
+            letter-spacing: 0;
             white-space: pre;
             color: #9ef0ff;
-            max-height: 450px;
+            max-height: 520px;
             border: 1px solid #2d3e6e;
         }
-
-        .ascii-art {
-            margin: 0;
-            white-space: pre;
-        }
-
+        .ascii-art { margin: 0; white-space: pre; }
         button {
             background: #2563eb;
             border: none;
@@ -184,17 +130,8 @@
             cursor: pointer;
             transition: 0.2s;
         }
-
-        button:hover {
-            background: #3b82f6;
-            transform: scale(0.98);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
+        button:hover { background: #3b82f6; transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-group {
             display: flex;
             flex-wrap: wrap;
@@ -202,31 +139,22 @@
             margin-top: 1rem;
             justify-content: center;
         }
-
-        .btn-success {
-            background: #10b981;
-        }
-
-        .btn-warning {
-            background: #f59e0b;
-        }
-
+        .btn-success { background: #10b981; }
+        .btn-warning { background: #f59e0b; }
         .status {
             font-size: 0.75rem;
             margin-top: 0.6rem;
             text-align: center;
             color: #86b3ff;
         }
-
         .image-options {
             background: #0b1120;
             border-radius: 0.8rem;
             padding: 0.8rem;
             margin-top: 0.8rem;
         }
-
         @media (max-width: 900px) {
-            .ascii-container { font-size: 7px; }
+            .ascii-container { font-size: 10px; }
         }
     </style>
 </head>
@@ -244,12 +172,10 @@
             <img id="preview" class="preview-img" alt="Preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a2538'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%236b8cce' font-size='14'%3EChưa có ảnh%3C/text%3E%3C/svg%3E">
 
             <div class="section-title">🎨 CHỈNH SỬA ẢNH</div>
-            
             <div class="control-group">
                 <div class="control-label"><span>Characters (Độ rộng 40-400)</span><span id="widthVal">100</span></div>
                 <input type="range" id="widthRange" min="40" max="400" step="2" value="100">
             </div>
-
             <div class="row-2cols">
                 <div class="control-group">
                     <div class="control-label">Brightness</div>
@@ -260,7 +186,6 @@
                     <input type="range" id="contrast" min="0" max="200" value="100">
                 </div>
             </div>
-
             <div class="row-2cols">
                 <div class="control-group">
                     <div class="control-label">Saturation</div>
@@ -271,7 +196,6 @@
                     <input type="range" id="hue" min="0" max="360" value="0">
                 </div>
             </div>
-
             <div class="row-2cols">
                 <div class="control-group">
                     <div class="control-label">Grayscale %</div>
@@ -282,7 +206,6 @@
                     <input type="range" id="sepia" min="0" max="100" value="0">
                 </div>
             </div>
-
             <div class="row-2cols">
                 <div class="control-group">
                     <div class="control-label">Invert Colors %</div>
@@ -293,7 +216,6 @@
                     <input type="range" id="threshold" min="0" max="255" value="255">
                 </div>
             </div>
-
             <div class="row-2cols">
                 <div class="control-group">
                     <div class="control-label">Sharpness</div>
@@ -306,7 +228,6 @@
             </div>
 
             <div class="section-title">🔤 TÙY CHỈNH ASCII</div>
-            
             <div class="control-group">
                 <div class="control-label">ASCII gradient</div>
                 <select id="gradient">
@@ -319,15 +240,13 @@
                     <option value="contrast">Contrast (Tương phản cao)</option>
                 </select>
             </div>
-
             <div class="control-group">
                 <div class="control-label">Space Density (1-5)</div>
                 <input type="range" id="spaceDensity" min="1" max="5" step="1" value="1">
                 <span id="spaceVal">1</span>
             </div>
-
             <div class="control-group">
-                <div class="control-label">Transparent frame (px)</div>
+                <div class="control-label">Padding khung (px)</div>
                 <input type="number" id="padding" min="0" max="100" value="20" step="2">
             </div>
 
@@ -358,7 +277,7 @@
                         <input type="color" id="textColor" value="#9ef0ff">
                     </div>
                     <div>
-                        <div class="control-label">📏 Cỡ chữ</div>
+                        <div class="control-label">📏 Cỡ chữ (preview + PNG)</div>
                         <input type="number" id="fontSize" min="8" max="48" value="14" step="1">
                     </div>
                 </div>
@@ -373,7 +292,7 @@
             </div>
         </div>
     </div>
-    <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Threshold 255 = tắt · Edge 0 = tắt | Render-ready</footer>
+    <footer style="text-align:center; margin-top:1.5rem; font-size:0.7rem; opacity:0.5">⚙️ Threshold 255 = tắt · Edge 0 = tắt | PNG đo font thật để khớp output</footer>
 </div>
 
 <script>
@@ -400,6 +319,16 @@
 
     widthRange.oninput = () => widthVal.innerText = widthRange.value;
     spaceDensity.oninput = () => spaceVal.innerText = spaceDensity.value;
+
+    // Đồng bộ cỡ chữ preview với option xuất PNG
+    function syncPreviewFont() {
+        const px = Math.max(6, Math.min(24, parseInt(fontSize.value) || 14));
+        asciiOutput.style.fontSize = px + 'px';
+        asciiOutput.style.lineHeight = '1.2';
+        asciiOutput.style.letterSpacing = '0';
+    }
+    fontSize.addEventListener('input', syncPreviewFont);
+    syncPreviewFont();
 
     fileInput.onchange = (e) => {
         const file = e.target.files[0];
@@ -526,6 +455,10 @@
                     padding: parseInt(paddingInput.value)
                 })
             });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Lỗi tải PNG');
+            }
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -535,7 +468,7 @@
             URL.revokeObjectURL(url);
             statusMsg.innerText = '🖼️ Đã tải PNG';
         } catch (err) {
-            statusMsg.innerText = '❌ Lỗi tải PNG';
+            statusMsg.innerText = '❌ ' + (err.message || 'Lỗi tải PNG');
         }
     };
 
@@ -579,6 +512,7 @@
         bgColor.value = '#000000';
         textColor.value = '#9ef0ff';
         fontSize.value = '14';
+        syncPreviewFont();
         statusMsg.innerText = '🔄 Đã reset';
         if (currentFile) convertBtn.click();
     };
